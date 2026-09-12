@@ -361,8 +361,14 @@
                             </div>
                         </div>
 
-                        <div id="noGeometryAlert" class="alert alert-info mt-3 d-none">
-                            <i class="bi bi-info-circle-fill me-1"></i> No spatial geometry coordinates found to plot on map. Please view records in the <strong>Tabular Grid</strong> tab.
+                        <div id="noGeometryAlert" class="alert alert-info mt-3 d-none d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div>
+                                <i class="bi bi-info-circle-fill me-2 fs-5 text-primary"></i>
+                                <span>No geographical coordinates found in this JSON dataset to plot on a world map. All rows & columns are available in the Tabular Grid.</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" onclick="document.getElementById('table-tab').click()">
+                                <i class="bi bi-table me-1"></i> Open Tabular Grid & Export
+                            </button>
                         </div>
                     </div>
 
