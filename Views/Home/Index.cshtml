@@ -1,219 +1,287 @@
 @model GeoFormat_Hub.Models.FileUploadViewModel
 @{
-    ViewData["Title"] = "GeoFormat Hub - Geospatial Converter & Visualizer";
+    ViewData["Title"] = "GeoFormat Hub - Enterprise GIS Converter & Spatial Analytics";
     bool hasData = Model.IsSuccess && Model.Dataset != null && Model.Dataset.Rows.Count > 0;
 }
 
 <div class="row justify-content-center">
-    <div class="col-xl-11 col-lg-12">
-        <!-- Hero Header -->
-        <div class="text-center mb-4">
-            <h1 class="fw-bold text-dark mb-2 d-flex align-items-center justify-content-center gap-2">
-                <i class="bi bi-globe-americas text-primary"></i>
-                <span>GeoFormat <span class="text-primary">Hub</span></span>
-            </h1>
-            <p class="text-muted fs-6">
-                Upload <strong>JSON / GeoJSON</strong> files, visualize on <strong>Interactive Leaflet Map</strong> & <strong>HTML Data Grid</strong>, and convert to <strong>Excel (.xlsx)</strong>, <strong>CSV (.csv)</strong>, <strong>SQL (.sql)</strong>, <strong>XML (.xml)</strong>, <strong>GeoJSON (.geojson)</strong>, or <strong>JSON (.json)</strong>.
-            </p>
+    <div class="col-12">
+        <!-- Hero Banner -->
+        <div class="geo-hero-banner">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="geo-hero-badge mb-3">
+                        <i class="bi bi-shield-check"></i> Enterprise Geospatial Engine &bull; WGS84 Geodesic
+                    </div>
+                    <h1 class="geo-hero-title mb-2">
+                        Geospatial Analytics & Format Hub
+                    </h1>
+                    <p class="text-white-50 fs-6 mb-0" style="max-width: 750px;">
+                        Upload any size <strong>JSON, GeoJSON, or ESRI ArcGIS</strong> files. Live polygon area & perimeter calculation, geodesic spatial statistics, interactive satellite mapping, and multi-format conversion to <strong>Excel, CSV, SQL, XML, GeoJSON, and JSON</strong>.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <div class="d-inline-flex flex-column gap-2">
+                        <button type="button" class="btn btn-outline-light d-flex align-items-center justify-content-center gap-2 px-3 py-2 rounded-pill shadow-sm" onclick="loadSampleData()">
+                            <i class="bi bi-stars text-warning"></i> <span>Try Sample Dataset</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Dynamic Status Alert -->
+        <!-- Dynamic Status Feedback Alert -->
         <div id="clientAlert" class="alert @(Model.IsSuccess ? "alert-success" : "alert-warning") alert-dismissible fade show shadow-sm mb-4 @(string.IsNullOrEmpty(Model.StatusMessage) ? "d-none" : "")" role="alert">
             <div class="d-flex align-items-center">
                 <i id="clientAlertIcon" class="bi @(Model.IsSuccess ? "bi-check-circle-fill text-success" : "bi-exclamation-circle-fill") fs-4 me-2"></i>
-                <span id="clientAlertMessage">@Model.StatusMessage</span>
+                <span id="clientAlertMessage" class="fw-medium">@Model.StatusMessage</span>
             </div>
             <button type="button" class="btn-close" onclick="hideClientAlert()" aria-label="Close"></button>
         </div>
 
-        <!-- Upload Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body p-4">
-                <form id="uploadForm" asp-controller="Home" asp-action="Index" method="post" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
+        <!-- High-Capacity Upload Dropzone Card -->
+        <div class="geo-upload-card p-4 mb-4">
+            <form id="uploadForm" asp-controller="Home" asp-action="Index" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
 
-                    <!-- Drag & Drop Dropzone -->
-                    <div class="dropzone-container mb-3" id="dropZone">
-                        <input type="file" 
-                               id="geoFileInput" 
-                               name="GeoFile" 
-                               class="file-input-hidden" 
-                               accept=".json,.geojson,application/json,application/geo+json" />
+                <div class="geo-dropzone mb-3" id="dropZone">
+                    <input type="file" 
+                           id="geoFileInput" 
+                           name="GeoFile" 
+                           class="file-input-hidden" 
+                           accept=".json,.geojson,application/json,application/geo+json" />
+                    
+                    <div class="geo-dropzone-content">
+                        <div class="geo-dropzone-icon-circle">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                        </div>
+                        <h4 class="fw-bold mb-1 text-dark">Drag & Drop Geospatial / JSON File</h4>
+                        <p class="text-muted small mb-2">Supported Formats: <strong>GeoJSON (.geojson)</strong>, <strong>Standard JSON (.json)</strong>, <strong>ESRI ArcGIS JSON</strong></p>
                         
-                        <div class="dropzone-content">
-                            <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
-                            <h5 class="fw-semibold mb-1">Drag & Drop your JSON / GeoJSON file here</h5>
-                            <p class="text-muted small mb-2">Supported formats: <strong>.json</strong>, <strong>.geojson</strong></p>
-                            <div class="d-inline-flex align-items-center gap-1 badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
-                                <i class="bi bi-infinity"></i> <span>High Capacity Streaming: Upload any file size (50MB, 500MB, 1GB+)</span>
-                            </div>
-                            <div class="d-flex justify-content-center gap-2 flex-wrap">
-                                <button type="button" class="btn btn-outline-primary px-4 rounded-pill" onclick="document.getElementById('geoFileInput').click()">
-                                    <i class="bi bi-folder2-open me-1"></i> Browse Files
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary px-3 rounded-pill" onclick="loadSampleData()">
-                                    <i class="bi bi-file-earmark-sample me-1"></i> Try Sample Data
-                                </button>
-                            </div>
+                        <div class="d-inline-flex align-items-center gap-1 badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
+                            <i class="bi bi-infinity"></i> <span>High Capacity Streaming: Upload any file size (50MB, 500MB, 1GB+)</span>
+                        </div>
+                        
+                        <div class="d-flex justify-content-center gap-2 flex-wrap">
+                            <button type="button" class="btn btn-primary px-4 rounded-pill fw-semibold shadow-sm" onclick="document.getElementById('geoFileInput').click()">
+                                <i class="bi bi-folder2-open me-1"></i> Browse Local Files
+                            </button>
+                            <button type="button" class="btn btn-light border px-3 rounded-pill fw-medium" onclick="loadSampleData()">
+                                <i class="bi bi-file-earmark-sample me-1"></i> Load Demo Data
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Selected File Info Card -->
-                    <div id="selectedFileInfo" class="selected-file-card d-none mb-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-3">
-                                <i class="bi bi-filetype-json fs-2 text-primary"></i>
-                                <div>
-                                    <div class="fw-bold text-dark" id="displayFileName">file.geojson</div>
-                                    <div class="text-muted small">
-                                        Size: <span id="displayFileSize" class="fw-medium">0 KB</span> | 
-                                        Format: <span id="displayFileExt" class="badge bg-primary-subtle text-primary">GEOJSON</span>
-                                    </div>
+                <!-- Selected File Metadata Card -->
+                <div id="selectedFileInfo" class="selected-file-glass d-none mb-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="kpi-icon-badge kpi-icon-primary">
+                                <i class="bi bi-filetype-json"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark fs-6" id="displayFileName">file.geojson</div>
+                                <div class="text-muted small">
+                                    Size: <span id="displayFileSize" class="fw-semibold text-dark">0 KB</span> &bull; 
+                                    Format: <span id="displayFileExt" class="badge bg-primary-subtle text-primary fw-bold">GEOJSON</span>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnClearFile" title="Remove selected file">
-                                <i class="bi bi-trash3"></i> Remove
-                            </button>
                         </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger px-3 rounded-pill" id="btnClearFile">
+                            <i class="bi bi-trash3 me-1"></i> Clear
+                        </button>
                     </div>
+                </div>
 
-                    <!-- Live Upload Progress Bar Container -->
-                    <div id="uploadProgressContainer" class="d-none mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1 small">
-                            <span id="uploadProgressStatus" class="fw-semibold text-primary">
-                                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Uploading: 0%
-                            </span>
-                            <span id="uploadProgressStats" class="text-muted">0 MB / 0 MB (0 MB/s)</span>
-                        </div>
-                        <div class="progress" style="height: 10px; border-radius: 6px;">
-                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+                <!-- Live Upload Streaming Progress Bar -->
+                <div id="uploadProgressContainer" class="d-none mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1 small">
+                        <span id="uploadProgressStatus" class="fw-bold text-primary">
+                            <i class="bi bi-cloud-arrow-up-fill me-1"></i> Uploading: 0%
+                        </span>
+                        <span id="uploadProgressStats" class="text-muted mono-font">0 MB / 0 MB (0 MB/s)</span>
                     </div>
-
-                    <span asp-validation-for="GeoFile" class="text-danger small d-block mb-3"></span>
-
-                    <!-- Action Buttons -->
-                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                        <div class="text-muted small">
-                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Streaming live processor with real-time progress
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-light border px-3" id="btnClientPreview" disabled>
-                                <i class="bi bi-eye me-1"></i> Quick Preview
-                            </button>
-                            <button type="submit" class="btn btn-primary-gradient px-4" id="btnUploadSubmit" disabled>
-                                <i class="bi bi-upload me-1"></i> Upload & Process Data
-                            </button>
-                        </div>
+                    <div class="progress" style="height: 12px; border-radius: 6px; background-color: #e2e8f0;">
+                        <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                </form>
-            </div>
+                </div>
+
+                <span asp-validation-for="GeoFile" class="text-danger small d-block mb-3"></span>
+
+                <!-- Action Controls -->
+                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center pt-2 border-top">
+                    <div class="text-muted small d-flex align-items-center gap-1">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i>
+                        <span>In-Memory high-speed streaming calculation parser</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light border px-3 fw-semibold" id="btnClientPreview" disabled>
+                            <i class="bi bi-eye me-1"></i> Quick Preview
+                        </button>
+                        <button type="submit" class="btn btn-primary-gradient px-4" id="btnUploadSubmit" disabled>
+                            <i class="bi bi-upload me-1"></i> Upload & Calculate Data
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
 
-        <!-- Client-Side Quick Preview Section (Before upload) -->
-        <div id="clientPreviewContainer" class="card shadow-sm border-0 mb-4 d-none">
-            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                <h5 class="fw-bold mb-0 text-dark">
-                    <i class="bi bi-code-square text-primary me-2"></i>Client-side Fast Inspection
+        <!-- Fast Client Inspection Section -->
+        <div id="clientPreviewContainer" class="geo-upload-card p-4 mb-4 d-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-code-slash text-primary"></i> Fast Client-side Sliced Preview
                 </h5>
-                <button class="btn btn-sm btn-outline-secondary" onclick="copyContent('clientJsonPreview')">
+                <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="copyContent('clientJsonPreview')">
                     <i class="bi bi-clipboard me-1"></i> Copy
                 </button>
             </div>
-            <div class="card-body pt-0">
-                <div id="clientStats" class="mb-3 d-flex gap-2 flex-wrap"></div>
-                <pre class="json-preview-box" id="clientJsonPreview"></pre>
-            </div>
+            <div id="clientStats" class="mb-3 d-flex gap-2 flex-wrap"></div>
+            <pre class="json-preview-box" id="clientJsonPreview"></pre>
         </div>
 
-        <!-- RESULTS SECTION: CONVERSION + STATS + MAP + TABLE -->
+        <!-- RESULTS & ANALYTICS DASHBOARD -->
         <div id="resultsSection" class="@(hasData ? "" : "d-none")">
             
-            <!-- Conversion & Download Card -->
-            <div class="card shadow-sm border-0 mb-4 export-card">
-                <div class="card-body p-4">
-                    <div class="row align-items-center gy-3">
-                        <div class="col-lg-5">
-                            <h5 class="fw-bold mb-1 text-dark">
-                                <i class="bi bi-file-earmark-arrow-down text-primary me-2"></i>Data Conversion & Export
-                            </h5>
-                            <p class="text-muted small mb-0">
-                                Select format to download converted dataset via ASP.NET Core Backend.
-                            </p>
-                        </div>
-                        <div class="col-lg-7">
-                            <form asp-controller="Home" asp-action="Export" method="post" class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center" id="exportForm">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="DatasetId" id="exportDatasetId" value="@Model.DatasetId" />
-                                <input type="hidden" name="FileName" id="exportFileName" value="@(Model.FileName ?? "GeoData")" />
-                                <input type="hidden" name="RawJson" id="exportRawJson" value="" />
-
-                                <!-- Format Dropdown -->
-                                <div class="input-group" style="max-width: 270px;">
-                                    <span class="input-group-text bg-white"><i class="bi bi-sliders"></i></span>
-                                    <select id="exportFormat" name="Format" class="form-select fw-medium">
-                                        <option value="excel">Excel (.xlsx)</option>
-                                        <option value="csv">CSV (.csv)</option>
-                                        <option value="sql">SQL Insert Query (.sql)</option>
-                                        <option value="xml">XML (.xml)</option>
-                                        <option value="json">Raw JSON (.json)</option>
-                                        <option value="geojson">GeoJSON (.geojson)</option>
-                                    </select>
-                                </div>
-
-                                <!-- SQL Table Name -->
-                                <div id="sqlTableGroup" class="d-none" style="max-width: 170px;">
-                                    <input type="text" class="form-control" name="TableName" id="tableNameInput" placeholder="Table Name" value="GeoData" />
-                                </div>
-
-                                <!-- Download Button with AJAX Blob support -->
-                                <button type="button" class="btn btn-success fw-semibold px-3 d-flex align-items-center gap-2" id="downloadBtn">
-                                    <i class="bi bi-download" id="exportIcon"></i>
-                                    <span id="exportBtnText">Download File</span>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Metadata Stats Overview -->
+            <!-- EXECUTIVE KPI SPATIAL STATS CARDS -->
             <div class="row g-3 mb-4">
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card">
-                        <div class="text-muted small">Source File</div>
-                        <div class="fw-semibold text-truncate" id="statFileName">@(Model.FileName ?? "-")</div>
+                <!-- Card 1: Features & File -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card-wrapper">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="kpi-val-sub">Total Features</div>
+                                <div class="kpi-val-primary" id="kpiTotalRecords">@(Model.Dataset?.TotalRecords ?? Model.FeatureCount)</div>
+                            </div>
+                            <div class="kpi-icon-badge kpi-icon-primary">
+                                <i class="bi bi-collection-fill"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="text-truncate small text-muted" id="kpiFileName">@(Model.FileName ?? "-")</span>
+                            <span class="badge bg-primary-subtle text-primary kpi-pill-badge" id="kpiDetectedType">@(Model.DetectedType ?? "JSON")</span>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card">
-                        <div class="text-muted small">Detected Type</div>
-                        <div class="fw-semibold text-primary" id="statDetectedType">@(Model.DetectedType ?? "JSON")</div>
+
+                <!-- Card 2: Calculated Total Area -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card-wrapper kpi-area">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="kpi-val-sub">Calculated Total Area</div>
+                                <div class="kpi-val-primary text-success" id="kpiTotalArea">0.00 <span class="fs-6 text-muted fw-normal">km²</span></div>
+                            </div>
+                            <div class="kpi-icon-badge kpi-icon-success">
+                                <i class="bi bi-bounding-box-circles"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="small text-muted" id="kpiAreaHa">0 ha</span>
+                            <span class="badge bg-success-subtle text-success kpi-pill-badge" id="kpiAreaAcres">0 Acres</span>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card">
-                        <div class="text-muted small">Total Records / Features</div>
-                        <div class="fw-semibold text-success fs-5" id="statTotalRecords">@(Model.Dataset?.TotalRecords ?? Model.FeatureCount)</div>
+
+                <!-- Card 3: Calculated Total Perimeter -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card-wrapper kpi-perimeter">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="kpi-val-sub">Calculated Perimeter</div>
+                                <div class="kpi-val-primary text-purple" id="kpiTotalPerimeter" style="color: var(--geo-purple);">0.00 <span class="fs-6 text-muted fw-normal">km</span></div>
+                            </div>
+                            <div class="kpi-icon-badge kpi-icon-purple">
+                                <i class="bi bi-bezier2"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="small text-muted" id="kpiPerimeterM">0 meters</span>
+                            <span class="badge bg-purple-subtle text-purple kpi-pill-badge" style="background: #f5f3ff; color: #8b5cf6;" id="kpiAvgArea">Avg: 0 km²</span>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="stat-card">
-                        <div class="text-muted small">Geometry Summary</div>
-                        <div class="fw-semibold text-info text-truncate" id="statGeometrySummary">
-                            @(string.IsNullOrEmpty(Model.Dataset?.GeometryTypeSummary) ? "Non-spatial JSON" : Model.Dataset.GeometryTypeSummary)
+
+                <!-- Card 4: Spatial Center & BBox -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card-wrapper kpi-spatial">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="kpi-val-sub">Spatial Centroid</div>
+                                <div class="kpi-val-primary text-warning fs-5 mono-font" id="kpiCentroid">-- , --</div>
+                            </div>
+                            <div class="kpi-icon-badge kpi-icon-warning">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="small text-muted text-truncate" id="kpiGeometrySummary">@(Model.Dataset?.GeometryTypeSummary ?? "Non-spatial JSON")</span>
+                            <span class="badge bg-warning-subtle text-warning kpi-pill-badge">WGS84</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Visualization & Data Tabs -->
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3 border-0">
-                    <ul class="nav nav-pills nav-pills-custom gap-2" id="previewTabs" role="tablist">
+            <!-- EXPORT SUITE PANEL -->
+            <div class="geo-export-card mb-4">
+                <div class="row align-items-center gy-3">
+                    <div class="col-lg-5">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <i class="bi bi-file-earmark-arrow-down fs-4 text-info"></i>
+                            <h4 class="fw-bold mb-0 text-white">Geospatial Conversion Studio</h4>
+                        </div>
+                        <p class="text-white-50 small mb-0">
+                            Export parsed and calculated spatial features to your desired enterprise data format.
+                        </p>
+                    </div>
+                    <div class="col-lg-7">
+                        <form asp-controller="Home" asp-action="Export" method="post" class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center" id="exportForm">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="DatasetId" id="exportDatasetId" value="@Model.DatasetId" />
+                            <input type="hidden" name="FileName" id="exportFileName" value="@(Model.FileName ?? "GeoData")" />
+                            <input type="hidden" name="RawJson" id="exportRawJson" value="" />
+
+                            <!-- Format Dropdown -->
+                            <div class="input-group" style="max-width: 260px;">
+                                <span class="input-group-text bg-dark border-secondary text-white-50"><i class="bi bi-sliders"></i></span>
+                                <select id="exportFormat" name="Format" class="form-select bg-dark border-secondary text-white fw-semibold">
+                                    <option value="excel">Excel (.xlsx)</option>
+                                    <option value="csv">CSV (.csv)</option>
+                                    <option value="sql">SQL Insert Script (.sql)</option>
+                                    <option value="xml">XML Document (.xml)</option>
+                                    <option value="geojson">GeoJSON (.geojson)</option>
+                                    <option value="json">Raw JSON (.json)</option>
+                                </select>
+                            </div>
+
+                            <!-- SQL Table Name Input -->
+                            <div id="sqlTableGroup" class="d-none" style="max-width: 170px;">
+                                <input type="text" class="form-control bg-dark border-secondary text-white" name="TableName" id="tableNameInput" placeholder="Table Name" value="GeoData" />
+                            </div>
+
+                            <!-- Download Button -->
+                            <button type="button" class="btn btn-success-gradient d-flex align-items-center gap-2 shadow-sm" id="downloadBtn">
+                                <i class="bi bi-download" id="exportIcon"></i>
+                                <span id="exportBtnText">Export Dataset</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN WORKSPACE TABS -->
+            <div class="geo-upload-card p-4 mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 pb-3 border-bottom">
+                    <ul class="nav nav-pills nav-pills-geo gap-2" id="previewTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="map-tab" data-bs-toggle="tab" data-bs-target="#mapTabPane" type="button" role="tab">
-                                <i class="bi bi-map me-1"></i> Map View (Leaflet.js)
+                                <i class="bi bi-map-fill me-1"></i> GIS Map Studio
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analyticsTabPane" type="button" role="tab">
+                                <i class="bi bi-pie-chart-fill me-1"></i> Spatial Analytics & Calculations
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -223,94 +291,221 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#rawTabPane" type="button" role="tab">
-                                <i class="bi bi-code-square me-1"></i> Raw JSON Preview
+                                <i class="bi bi-code-slash me-1"></i> Raw JSON Preview
                             </button>
                         </li>
                     </ul>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill font-monospace" id="crsBadge">EPSG:4326 (WGS84)</span>
+                    </div>
                 </div>
-                <div class="card-body pt-0">
-                    <div class="tab-content" id="previewTabsContent">
-                        
-                        <!-- TAB 1: Leaflet.js Map -->
-                        <div class="tab-pane fade show active" id="mapTabPane" role="tabpanel">
-                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                                <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 420px;">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white text-primary"><i class="bi bi-search"></i></span>
-                                        <input type="text" class="form-control" id="mapSearchInput" placeholder="Search polygon, place, or feature on map...">
-                                    </div>
-                                    <span id="mapSearchCount" class="badge bg-primary-subtle text-primary border border-primary-subtle d-none">0 found</span>
-                                </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="small text-muted d-none d-md-inline">
-                                        <i class="bi bi-cursor-fill text-primary me-1"></i> Click polygon to inspect & zoom
-                                    </span>
-                                    <button class="btn btn-sm btn-outline-primary" id="btnFitBounds">
-                                        <i class="bi bi-arrows-fullscreen me-1"></i> Zoom to Fit Layer
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="mapContainer"></div>
-                            <div id="noGeometryAlert" class="alert alert-info mt-3 d-none">
-                                <i class="bi bi-info-circle-fill me-1"></i> No spatial geometry coordinates found to plot on map. Please view records in the <strong>Tabular Grid</strong> tab.
-                            </div>
-                        </div>
 
-                        <!-- TAB 2: HTML Data Table -->
-                        <div class="tab-pane fade" id="tableTabPane" role="tabpanel">
-                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                                <div class="input-group" style="max-width: 320px;">
-                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                                    <input type="text" class="form-control" id="tableSearchInput" placeholder="Search across all columns...">
+                <div class="tab-content" id="previewTabsContent">
+                    
+                    <!-- TAB 1: Leaflet GIS Map Studio -->
+                    <div class="tab-pane fade show active" id="mapTabPane" role="tabpanel">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <!-- Map Search Bar -->
+                            <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 480px;">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0 text-primary"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control border-start-0 ps-0" id="mapSearchInput" placeholder="Search polygon, place, village, or attribute on map...">
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="small text-muted">Rows per page:</span>
-                                    <select class="form-select form-select-sm" id="pageSizeSelect" style="width: 85px;">
-                                        <option value="10">10</option>
-                                        <option value="25" selected>25</option>
-                                        <option value="50">50</option>
-                                        <option value="100">100</option>
-                                    </select>
-                                </div>
+                                <span id="mapSearchCount" class="badge bg-primary-subtle text-primary border border-primary-subtle d-none">0 found</span>
                             </div>
 
-                            <div class="data-table-container">
-                                <table class="table table-hover table-striped table-custom align-middle" id="dataTable">
-                                    <thead id="tableHead"></thead>
-                                    <tbody id="tableBody"></tbody>
-                                </table>
-                            </div>
-
-                            <!-- Table Controls & Load More -->
-                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mt-3">
-                                <div class="small text-muted" id="tableInfo">Showing records</div>
-                                
-                                <div class="d-flex align-items-center gap-2">
-                                    <button type="button" class="btn btn-sm btn-outline-primary px-3 rounded-pill d-none" id="btnLoadMore">
-                                        <i class="bi bi-arrow-down-circle me-1"></i> Load More (+50 rows)
-                                    </button>
-                                </div>
-
-                                <nav>
-                                    <ul class="pagination pagination-sm mb-0" id="tablePagination"></ul>
-                                </nav>
-                            </div>
-                        </div>
-
-                        <!-- TAB 3: Raw JSON Inspector -->
-                        <div class="tab-pane fade" id="rawTabPane" role="tabpanel">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="text-muted small fw-medium">
-                                    <i class="bi bi-info-circle text-primary me-1"></i> Formatted Preview:
-                                </span>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="copyContent('serverRawJson')">
-                                    <i class="bi bi-clipboard me-1"></i> Copy Preview
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-sm btn-outline-secondary px-3 rounded-pill" id="btnFitBounds" title="Fit Layer Bounds">
+                                    <i class="bi bi-arrows-fullscreen me-1"></i> Zoom Layer
                                 </button>
                             </div>
-                            <pre class="json-preview-box" id="serverRawJson">@(Model.JsonPreview ?? Model.FileContent)</pre>
                         </div>
 
+                        <!-- Map Viewport with Floating HUD -->
+                        <div class="map-viewport-wrapper">
+                            <div id="mapContainer"></div>
+
+                            <!-- Live Floating Spatial Inspector HUD -->
+                            <div id="mapFloatingHud" class="map-floating-hud d-none">
+                                <div class="map-floating-hud-header">
+                                    <span class="hud-title">
+                                        <i class="bi bi-bounding-box"></i> <span id="hudFeatureName">Feature Inspector</span>
+                                    </span>
+                                    <button type="button" class="btn-close btn-close-white" style="font-size: 0.65rem;" onclick="document.getElementById('mapFloatingHud').classList.add('d-none')"></button>
+                                </div>
+                                <div class="hud-stat-grid">
+                                    <div class="hud-stat-box">
+                                        <span class="hud-stat-label">Calculated Area</span>
+                                        <span class="hud-stat-val text-success" id="hudAreaKm">0.00</span><span class="hud-stat-unit">km²</span>
+                                        <div class="small text-white-50" id="hudAreaHa">0 ha (0 acres)</div>
+                                    </div>
+                                    <div class="hud-stat-box">
+                                        <span class="hud-stat-label">Perimeter</span>
+                                        <span class="hud-stat-val text-purple" style="color: #c084fc;" id="hudPerimeterKm">0.00</span><span class="hud-stat-unit">km</span>
+                                        <div class="small text-white-50" id="hudPerimeterM">0 meters</div>
+                                    </div>
+                                    <div class="hud-stat-box">
+                                        <span class="hud-stat-label">Vertices</span>
+                                        <span class="hud-stat-val" id="hudVertexCount">0</span>
+                                    </div>
+                                    <div class="hud-stat-box">
+                                        <span class="hud-stat-label">Geometry</span>
+                                        <span class="hud-stat-val text-info" id="hudGeomType">Polygon</span>
+                                    </div>
+                                    <div class="hud-stat-box hud-stat-box-full">
+                                        <span class="hud-stat-label">Centroid Coordinates</span>
+                                        <span class="hud-stat-val text-warning fs-6" id="hudCentroid">0.00, 0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="noGeometryAlert" class="alert alert-info mt-3 d-none">
+                            <i class="bi bi-info-circle-fill me-1"></i> No spatial geometry coordinates found to plot on map. Please view records in the <strong>Tabular Grid</strong> tab.
+                        </div>
                     </div>
+
+                    <!-- TAB 2: Spatial Analytics & Calculations Dashboard -->
+                    <div class="tab-pane fade" id="analyticsTabPane" role="tabpanel">
+                        <div class="row g-4">
+                            <!-- Top Largest Polygons by Calculated Area -->
+                            <div class="col-lg-7">
+                                <div class="analytics-section-card h-100">
+                                    <div class="analytics-title">
+                                        <i class="bi bi-trophy-fill text-warning"></i> Largest Polygons by Calculated Area
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table ranking-table-custom" id="topPolygonsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Feature / Name</th>
+                                                    <th>Area (km²)</th>
+                                                    <th>Area (Hectares)</th>
+                                                    <th>Perimeter (km)</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="topPolygonsBody">
+                                                <tr><td colspan="6" class="text-center text-muted">Calculating features...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Spatial Extent & CRS Summary -->
+                            <div class="col-lg-5">
+                                <div class="analytics-section-card mb-4">
+                                    <div class="analytics-title">
+                                        <i class="bi bi-geo-fill text-primary"></i> Spatial Bounding Box & CRS
+                                    </div>
+                                    <div class="p-3 bg-light rounded-3 border mb-3">
+                                        <div class="row g-2 small">
+                                            <div class="col-6">
+                                                <span class="text-muted d-block">Min Latitude:</span>
+                                                <strong class="mono-font" id="bboxMinLat">--</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="text-muted d-block">Max Latitude:</span>
+                                                <strong class="mono-font" id="bboxMaxLat">--</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="text-muted d-block">Min Longitude:</span>
+                                                <strong class="mono-font" id="bboxMinLng">--</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <span class="text-muted d-block">Max Longitude:</span>
+                                                <strong class="mono-font" id="bboxMaxLng">--</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                                        <span>Coordinate Reference System:</span>
+                                        <strong class="text-dark">EPSG:4326 (WGS84)</strong>
+                                    </div>
+                                </div>
+
+                                <!-- Numeric Attribute Statistics Summary -->
+                                <div class="analytics-section-card">
+                                    <div class="analytics-title">
+                                        <i class="bi bi-calculator-fill text-success"></i> Attribute Field Statistics
+                                    </div>
+                                    <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                                        <table class="table table-sm ranking-table-custom" id="numericStatsTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Column</th>
+                                                    <th>Total Sum</th>
+                                                    <th>Average</th>
+                                                    <th>Max</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="numericStatsBody">
+                                                <tr><td colspan="4" class="text-center text-muted">Scanning numeric columns...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Tabular Grid (With Injected Calculated Columns) -->
+                    <div class="tab-pane fade" id="tableTabPane" role="tabpanel">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                            <div class="input-group" style="max-width: 360px;">
+                                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control border-start-0 ps-0" id="tableSearchInput" placeholder="Search across all columns and calculated metrics...">
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-muted">Rows per batch:</span>
+                                <select class="form-select form-select-sm" id="pageSizeSelect" style="width: 90px;">
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="250">250</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="data-table-container">
+                            <table class="table table-hover table-striped table-custom align-middle" id="dataTable">
+                                <thead id="tableHead"></thead>
+                                <tbody id="tableBody"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Table Pagination & Load More -->
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mt-3">
+                            <div class="small text-muted" id="tableInfo">Showing records</div>
+                            
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary px-3 rounded-pill d-none" id="btnLoadMore">
+                                    <i class="bi bi-arrow-down-circle me-1"></i> Load More (+50 rows)
+                                </button>
+                            </div>
+
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0" id="tablePagination"></ul>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: Raw JSON Inspector -->
+                    <div class="tab-pane fade" id="rawTabPane" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-medium">
+                                <i class="bi bi-info-circle text-primary me-1"></i> Formatted Raw Payload:
+                            </span>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="copyContent('serverRawJson')">
+                                <i class="bi bi-clipboard me-1"></i> Copy Preview
+                            </button>
+                        </div>
+                        <pre class="json-preview-box" id="serverRawJson">@(Model.JsonPreview ?? Model.FileContent)</pre>
+                    </div>
+
                 </div>
             </div>
 

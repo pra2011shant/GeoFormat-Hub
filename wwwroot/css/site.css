@@ -1,56 +1,260 @@
 :root {
-  --primary-color: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-subtle: #eff6ff;
-  --accent-color: #06b6d4;
-  --surface-color: #ffffff;
-  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  --border-radius: 12px;
-  --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --geo-primary: #3b82f6;
+  --geo-primary-hover: #2563eb;
+  --geo-primary-light: #eff6ff;
+  --geo-primary-glow: rgba(59, 130, 246, 0.25);
+  
+  --geo-accent: #06b6d4;
+  --geo-success: #10b981;
+  --geo-warning: #f59e0b;
+  --geo-danger: #ef4444;
+  --geo-purple: #8b5cf6;
+
+  --geo-dark-bg: #0f172a;
+  --geo-dark-surface: #1e293b;
+  --geo-dark-border: #334155;
+  
+  --geo-bg: #f8fafc;
+  --geo-card-bg: #ffffff;
+  --geo-border: #e2e8f0;
+  --geo-border-subtle: #f1f5f9;
+  
+  --geo-text-main: #0f172a;
+  --geo-text-muted: #64748b;
+  --geo-text-subtle: #94a3b8;
+
+  --geo-radius-sm: 8px;
+  --geo-radius-md: 12px;
+  --geo-radius-lg: 16px;
+  --geo-radius-full: 9999px;
+
+  --geo-shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  --geo-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --geo-shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --geo-shadow-glow: 0 0 20px rgba(59, 130, 246, 0.2);
 }
 
-body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background-color: #f8fafc;
-  color: #1e293b;
+/* =========================================================================
+   1. GLOBAL STYLES & RESET
+   ========================================================================= */
+* {
+  box-sizing: border-box;
+}
+
+body.geo-hub-body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--geo-bg);
+  color: var(--geo-text-main);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-main {
+.mono-font {
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.main-wrapper {
   flex: 1;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
 }
 
-/* Upload Dropzone */
-.dropzone-container {
-  border: 2px dashed #94a3b8;
-  border-radius: var(--border-radius);
-  background-color: #ffffff;
+/* =========================================================================
+   2. NAVBAR & HEADER
+   ========================================================================= */
+.geo-navbar {
+  background: linear-gradient(135deg, #0b1120 0%, #0f172a 50%, #1e293b 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  padding: 0.75rem 1rem;
+}
+
+.brand-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.25rem;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+.brand-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+.brand-accent {
+  color: #38bdf8;
+  margin-left: 2px;
+}
+
+.brand-subtitle {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.nav-link-custom {
+  color: #cbd5e1 !important;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem !important;
+  border-radius: var(--geo-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.nav-link-custom:hover, .nav-link-custom.active {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.status-pill {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--geo-radius-full);
+}
+
+.status-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--geo-success);
+  box-shadow: 0 0 8px var(--geo-success);
+  display: inline-block;
+  animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.btn-github-nav {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: var(--geo-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-github-nav:hover {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* =========================================================================
+   3. HERO & PROMOTIONAL BANNER
+   ========================================================================= */
+.geo-hero-banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1e1b4b 100%);
+  border-radius: var(--geo-radius-lg);
+  padding: 2.25rem 2rem;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--geo-shadow-lg);
+  margin-bottom: 2rem;
+}
+
+.geo-hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.05) 50%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.geo-hero-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+
+.geo-hero-badge {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #7dd3fc;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--geo-radius-full);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* =========================================================================
+   4. UPLOAD DROPZONE & STREAMING UI
+   ========================================================================= */
+.geo-upload-card {
+  background: #ffffff;
+  border-radius: var(--geo-radius-lg);
+  border: 1px solid var(--geo-border);
+  box-shadow: var(--geo-shadow-md);
+  transition: all 0.3s ease;
+}
+
+.geo-dropzone {
+  border: 2px dashed #cbd5e1;
+  border-radius: var(--geo-radius-md);
+  background: #f8fafc;
   padding: 2.5rem 1.5rem;
   text-align: center;
-  transition: all 0.25s ease-in-out;
-  cursor: pointer;
   position: relative;
+  cursor: pointer;
+  transition: all 0.25s ease-in-out;
 }
 
-.dropzone-container:hover, .dropzone-container.dragover {
-  border-color: var(--primary-color);
-  background-color: var(--primary-subtle);
+.geo-dropzone:hover, .geo-dropzone.dragover {
+  border-color: var(--geo-primary);
+  background: #eff6ff;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.12);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
 }
 
-.dropzone-icon {
-  font-size: 3.5rem;
-  color: var(--primary-color);
+.geo-dropzone-icon-circle {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--geo-primary);
+  font-size: 2.2rem;
   margin-bottom: 1rem;
-  display: inline-block;
-  transition: transform 0.2s ease;
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+  transition: transform 0.3s ease;
 }
 
-.dropzone-container:hover .dropzone-icon {
-  transform: scale(1.1);
+.geo-dropzone:hover .geo-dropzone-icon-circle {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .file-input-hidden {
@@ -61,165 +265,479 @@ main {
   height: 100%;
   opacity: 0;
   cursor: pointer;
-  z-index: 5;
+  z-index: 10;
 }
 
-/* File Info Box */
-.selected-file-card {
-  background: #f1f5f9;
-  border-radius: 10px;
-  border-left: 4px solid var(--primary-color);
-  padding: 1rem;
-  margin-top: 1rem;
-  transition: all 0.2s ease;
-}
-
-/* Code Preview Box */
-.json-preview-box {
-  background: #0f172a;
-  color: #38bdf8;
-  border-radius: var(--border-radius);
+.selected-file-glass {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+  border: 1px solid #bbf7d0;
+  border-left: 5px solid var(--geo-success);
+  border-radius: var(--geo-radius-md);
   padding: 1.25rem;
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 0.875rem;
-  max-height: 380px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-word;
-  border: 1px solid #1e293b;
+  margin-top: 1rem;
 }
 
-/* Badge & Stat pills */
-.badge-geo {
-  background-color: #e0e7ff;
-  color: #3730a3;
-  font-weight: 600;
-  padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
+/* =========================================================================
+   5. EXECUTIVE SPATIAL STATS & KPI METRICS CARDS
+   ========================================================================= */
+.kpi-card-wrapper {
+  background: #ffffff;
+  border: 1px solid var(--geo-border);
+  border-radius: var(--geo-radius-md);
+  padding: 1.25rem;
+  box-shadow: var(--geo-shadow-sm);
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
 }
 
-.stat-card {
-  background: white;
-  border-radius: 10px;
-  padding: 1rem;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+.kpi-card-wrapper:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--geo-shadow-md);
+  border-color: #cbd5e1;
 }
 
-.btn-primary-gradient {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: white;
-  border: none;
-  font-weight: 600;
-  padding: 0.6rem 1.4rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.btn-primary-gradient:hover {
-  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
-  color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-}
-
-/* Map Container */
-#mapContainer {
-  height: 480px;
+.kpi-card-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
   width: 100%;
-  border-radius: var(--border-radius);
-  z-index: 1;
-  border: 1px solid #cbd5e1;
+  height: 3px;
+  background: linear-gradient(90deg, var(--geo-primary), var(--geo-accent));
+  opacity: 0.8;
 }
 
-.leaflet-popup-content-wrapper {
+.kpi-card-wrapper.kpi-area::after {
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+}
+
+.kpi-card-wrapper.kpi-perimeter::after {
+  background: linear-gradient(90deg, #8b5cf6, #ec4899);
+}
+
+.kpi-card-wrapper.kpi-spatial::after {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.kpi-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+
+.kpi-icon-primary {
+  background: #eff6ff;
+  color: var(--geo-primary);
+}
+
+.kpi-icon-success {
+  background: #ecfdf5;
+  color: var(--geo-success);
+}
+
+.kpi-icon-purple {
+  background: #f5f3ff;
+  color: var(--geo-purple);
+}
+
+.kpi-icon-warning {
+  background: #fffbeb;
+  color: var(--geo-warning);
+}
+
+.kpi-val-primary {
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.kpi-val-sub {
+  font-size: 0.8rem;
+  color: var(--geo-text-muted);
+  font-weight: 500;
+}
+
+.kpi-pill-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--geo-radius-full);
+}
+
+/* =========================================================================
+   6. LEAFLET MAP & LIVE SPATIAL HUD
+   ========================================================================= */
+.map-viewport-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: var(--geo-radius-md);
+  overflow: hidden;
+  border: 1px solid var(--geo-border);
+  box-shadow: var(--geo-shadow-md);
+}
+
+#mapContainer {
+  height: 540px;
+  width: 100%;
+  z-index: 1;
+  background-color: #0f172a;
+}
+
+/* Live Floating Spatial Inspector HUD */
+.map-floating-hud {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--geo-radius-md);
+  color: #ffffff;
+  padding: 1rem 1.25rem;
+  width: 320px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  transition: all 0.3s ease;
+}
+
+.map-floating-hud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.hud-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.hud-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.hud-stat-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  padding: 0.5rem 0.6rem;
+}
+
+.hud-stat-box-full {
+  grid-column: span 2;
+}
+
+.hud-stat-label {
+  font-size: 0.68rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.hud-stat-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f8fafc;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.hud-stat-unit {
+  font-size: 0.72rem;
+  color: #38bdf8;
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+/* Custom Leaflet Controls & Popups */
+.leaflet-popup-content-wrapper {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border-radius: var(--geo-radius-md) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.leaflet-popup-tip {
+  background: #0f172a !important;
 }
 
 .leaflet-popup-content {
-  margin: 12px;
-  font-family: 'Inter', sans-serif;
+  margin: 0 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 0.85rem;
+  line-height: 1.4;
 }
 
-.popup-table {
+.popup-pro-header {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.popup-pro-body {
+  padding: 0.85rem 1rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.popup-calc-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.popup-chip {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.popup-pro-table {
   width: 100%;
-  margin-top: 6px;
   border-collapse: collapse;
 }
 
-.popup-table td {
-  padding: 3px 6px;
-  border-bottom: 1px solid #f1f5f9;
+.popup-pro-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.8rem;
 }
 
-.popup-table td.prop-key {
+.popup-pro-table td.prop-key {
+  color: #94a3b8;
   font-weight: 600;
-  color: #475569;
+  width: 40%;
 }
 
-/* Interactive Data Table */
+.popup-pro-table td.prop-val {
+  color: #f1f5f9;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.popup-pro-footer {
+  padding: 0.6rem 1rem 0.85rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* =========================================================================
+   7. DEDICATED SPATIAL ANALYTICS TAB
+   ========================================================================= */
+.analytics-section-card {
+  background: #ffffff;
+  border: 1px solid var(--geo-border);
+  border-radius: var(--geo-radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--geo-shadow-sm);
+  margin-bottom: 1.5rem;
+}
+
+.analytics-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.ranking-table-custom {
+  margin-bottom: 0;
+}
+
+.ranking-table-custom th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--geo-border);
+  padding: 0.75rem;
+}
+
+.ranking-table-custom td {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--geo-border);
+}
+
+.progress-custom-bar {
+  height: 6px;
+  border-radius: 3px;
+  background-color: #e2e8f0;
+  overflow: hidden;
+}
+
+/* =========================================================================
+   8. TABULAR GRID (PAGINATED & HIGH PERFORMANCE)
+   ========================================================================= */
 .data-table-container {
-  max-height: 520px;
+  max-height: 540px;
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--geo-border);
+  border-radius: var(--geo-radius-md);
+  background: #ffffff;
 }
 
 .table-custom {
   margin-bottom: 0;
-  font-size: 0.875rem;
+  font-size: 0.86rem;
 }
 
 .table-custom thead th {
   position: sticky;
   top: 0;
-  background-color: #1e293b;
+  background-color: #0f172a;
   color: #f8fafc;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.3px;
   border: none;
-  z-index: 2;
+  z-index: 5;
+  padding: 0.85rem 0.75rem;
   white-space: nowrap;
 }
 
 .table-custom tbody tr {
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .table-custom tbody tr:hover {
-  background-color: #eff6ff !important;
+  background-color: #f0f7ff !important;
 }
 
 .table-custom tbody tr.table-active-row {
   background-color: #dbeafe !important;
-  font-weight: 500;
+  font-weight: 600;
 }
 
-/* Tab Navigation */
-.nav-pills-custom .nav-link {
-  color: #475569;
-  font-weight: 500;
-  border-radius: 8px;
-  padding: 0.5rem 1.25rem;
-  transition: all 0.2s ease;
-}
-
-.nav-pills-custom .nav-link.active {
-  background-color: var(--primary-color);
+/* =========================================================================
+   9. EXPORT SUITE & ACTION BUTTONS
+   ========================================================================= */
+.geo-export-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: var(--geo-radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #ffffff;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  padding: 1.75rem 2rem;
+  box-shadow: var(--geo-shadow-lg);
+  margin-bottom: 2rem;
 }
 
-/* Export Panel */
-.export-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: var(--border-radius);
+.btn-primary-gradient {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.65rem 1.6rem;
+  border-radius: var(--geo-radius-sm);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: all 0.25s ease;
+}
+
+.btn-primary-gradient:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+.btn-success-gradient {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.65rem 1.6rem;
+  border-radius: var(--geo-radius-sm);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  transition: all 0.25s ease;
+}
+
+.btn-success-gradient:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
+/* =========================================================================
+   10. TAB NAVIGATION & CODE PREVIEWS
+   ========================================================================= */
+.nav-pills-geo .nav-link {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: var(--geo-radius-sm);
+  padding: 0.6rem 1.25rem;
+  transition: all 0.2s ease;
+  background: #f1f5f9;
+  border: 1px solid var(--geo-border);
+}
+
+.nav-pills-geo .nav-link.active {
+  background: var(--geo-primary);
+  color: #ffffff;
+  border-color: var(--geo-primary);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.json-preview-box {
+  background: #0f172a;
+  color: #38bdf8;
+  border-radius: var(--geo-radius-md);
   padding: 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  max-height: 480px;
+  overflow-y: auto;
+  border: 1px solid #1e293b;
 }
 
-.footer {
-  margin-top: auto;
+/* Footer */
+.geo-footer {
+  background: #ffffff;
+  border-top: 1px solid var(--geo-border);
+}
+
+.hover-white:hover {
+  color: var(--geo-primary) !important;
 }

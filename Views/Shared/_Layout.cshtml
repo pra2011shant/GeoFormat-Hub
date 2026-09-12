@@ -6,49 +6,82 @@
     <title>@ViewData["Title"] - GeoFormat Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/GeoFormat_Hub.styles.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom shadow-sm mb-4">
-            <div class="container">
-                <a class="navbar-brand fw-bold d-flex align-items-center gap-2" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-globe-americas text-primary fs-4"></i>
-                    <span>GeoFormat <span class="text-primary">Hub</span></span>
+<body class="geo-hub-body">
+    <header class="sticky-top">
+        <nav class="navbar navbar-expand-lg geo-navbar shadow-sm">
+            <div class="container-fluid px-lg-4">
+                <a class="navbar-brand d-flex align-items-center gap-2 text-white text-decoration-none" asp-area="" asp-controller="Home" asp-action="Index">
+                    <div class="brand-icon-wrapper">
+                        <i class="bi bi-globe-americas"></i>
+                    </div>
+                    <div class="d-flex flex-column">
+                        <div class="brand-title">
+                            <span>GeoFormat</span><span class="brand-accent">Hub</span>
+                        </div>
+                        <span class="brand-subtitle">Spatial Analytics & Format Studio</span>
+                    </div>
                 </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+
+                <div class="d-flex align-items-center gap-2 d-lg-none">
+                    <button class="navbar-toggler border-0 text-white p-1" type="button" data-bs-toggle="collapse" data-bs-target="#navMainContent" aria-controls="navMainContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <i class="bi bi-list fs-2"></i>
+                    </button>
+                </div>
+
+                <div class="collapse navbar-collapse" id="navMainContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link nav-link-custom active" asp-area="" asp-controller="Home" asp-action="Index">
+                                <i class="bi bi-layers-fill me-1 text-primary"></i> Workspace
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link nav-link-custom" href="javascript:void(0)" onclick="loadSampleData()">
+                                <i class="bi bi-stars me-1 text-warning"></i> Load Sample GIS
+                            </a>
                         </li>
                     </ul>
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-none d-md-flex align-items-center gap-2 status-pill">
+                            <span class="status-indicator-dot"></span>
+                            <span class="text-white-50 small">High-Capacity Streaming Active</span>
+                        </div>
+                        <a href="https://github.com/pra2011shant/GeoFormat-Hub" target="_blank" rel="noopener noreferrer" class="btn btn-github-nav d-flex align-items-center gap-2">
+                            <i class="bi bi-github"></i>
+                            <span class="d-none d-sm-inline">GitHub</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+
+    <div class="container-fluid px-lg-4 py-4 main-wrapper">
+        <main role="main">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - GeoFormat_Hub - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="geo-footer mt-auto py-3">
+        <div class="container-fluid px-lg-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="text-muted small">
+                &copy; 2026 <strong>GeoFormat Hub</strong> &mdash; Enterprise High-Performance Geospatial Converter & Analytics Engine.
+            </div>
+            <div class="d-flex gap-3 text-muted small">
+                <span><i class="bi bi-cpu text-primary me-1"></i> 100% In-Memory WGS84 Geodesic Engine</span>
+                <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-muted text-decoration-none hover-white">Privacy</a>
+            </div>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
