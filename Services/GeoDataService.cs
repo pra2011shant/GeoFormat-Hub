@@ -269,7 +269,7 @@ namespace GeoFormat_Hub.Services
 
         /// <summary>
         /// Parses a generic array of JSON objects into structured grid rows.
-        /// Automatically detects string/numeric latitude & longitude properties and embedded GeometryJSON for GIS mapping.
+        /// Automatically detects ESRI ArcGIS (rings, paths, x/y), GeoJSON, and latitude/longitude properties.
         /// </summary>
         private void ParseGenericJsonArray(JsonElement array, GeoDataset dataset)
         {
@@ -290,6 +290,7 @@ namespace GeoFormat_Hub.Services
                     double? lon = null;
                     string? geomJsonString = null;
                     string? customGeomType = null;
+                    string? directCoordinates = null;
 
                     foreach (var prop in item.EnumerateObject())
                     {
@@ -298,11 +299,21 @@ namespace GeoFormat_Hub.Services
                         row[prop.Name] = val;
 
                         if (prop.Name.Equals("GeometryJSON", StringComparison.OrdinalIgnoreCase) ||
-                            prop.Name.Equals("geom", StringComparison.OrdinalIgnoreCase) ||
                             prop.Name.Equals("geometry", StringComparison.OrdinalIgnoreCase) ||
-                            prop.Name.Equals("the_geom", StringComparison.OrdinalIgnoreCase))
+                            prop.Name.Equals("geom", StringComparison.OrdinalIgnoreCase) ||
+                            prop.Name.Equals("the_geom", StringComparison.OrdinalIgnoreCase) ||
+                            prop.Name.Equals("geojson", StringComparison.OrdinalIgnoreCase) ||
+                            prop.Name.Equals("shape", StringComparison.OrdinalIgnoreCase))
                         {
                             geomJsonString = val?.ToString();
+                        }
+                        else if (prop.Name.Equals("rings", StringComparison.OrdinalIgnoreCase) ||
+                                 prop.Name.Equals("paths", StringComparison.OrdinalIgnoreCase) ||
+                                 prop.Name.Equals("coordinates", StringComparison.OrdinalIgnoreCase))
+                        {
+                            directCoordinates = val?.ToString();
+                            if (prop.Name.Equals("rings", StringComparison.OrdinalIgnoreCase)) customGeomType = "Polygon";
+                            else if (prop.Name.Equals("paths", StringComparison.OrdinalIgnoreCase)) customGeomType = "LineString";
                         }
                         else if (prop.Name.Equals("GeometryType", StringComparison.OrdinalIgnoreCase) ||
                                  prop.Name.Equals("Geometry_Type", StringComparison.OrdinalIgnoreCase))
@@ -341,25 +352,61 @@ namespace GeoFormat_Hub.Services
                         coordinatesDetected = true;
                         detectedGeomType = gType;
                     }
-                    // 2. Embedded GeometryJSON string found (e.g. "{ \"type\": \"Point\", \"coordinates\": [84.08, 24.81] }")
+                    // 2. Embedded Geometry JSON found (GeoJSON or ESRI ArcGIS format)
                     else if (!string.IsNullOrWhiteSpace(geomJsonString))
                     {
                         try
                         {
                             using var gDoc = JsonDocument.Parse(geomJsonString);
                             var gRoot = gDoc.RootElement;
-                            if (gRoot.ValueKind == JsonValueKind.Object &&
-                                gRoot.TryGetProperty("type", out var gType) &&
-                                gRoot.TryGetProperty("coordinates", out var gCoords))
+                            if (gRoot.ValueKind == JsonValueKind.Object)
                             {
-                                string gTypeStr = gType.GetString() ?? "Point";
-                                row["Geometry_Type"] = gTypeStr;
-                                row["Coordinates"] = gCoords.GetRawText();
-                                coordinatesDetected = true;
-                                detectedGeomType = gTypeStr;
+                                // A. GeoJSON format: { type: "Polygon", coordinates: [...] }
+                                if (gRoot.TryGetProperty("type", out var gType) &&
+                                    gRoot.TryGetProperty("coordinates", out var gCoords))
+                                {
+                                    string gTypeStr = gType.GetString() ?? "Polygon";
+                                    row["Geometry_Type"] = gTypeStr;
+                                    row["Coordinates"] = gCoords.GetRawText();
+                                    coordinatesDetected = true;
+                                    detectedGeomType = gTypeStr;
+                                }
+                                // B. ESRI ArcGIS Polygon format: { rings: [[[x, y], ...]] }
+                                else if (gRoot.TryGetProperty("rings", out var rings) && rings.ValueKind == JsonValueKind.Array)
+                                {
+                                    row["Geometry_Type"] = "Polygon";
+                                    row["Coordinates"] = rings.GetRawText();
+                                    coordinatesDetected = true;
+                                    detectedGeomType = "Polygon";
+                                }
+                                // C. ESRI ArcGIS Polyline format: { paths: [[[x, y], ...]] }
+                                else if (gRoot.TryGetProperty("paths", out var paths) && paths.ValueKind == JsonValueKind.Array)
+                                {
+                                    row["Geometry_Type"] = "LineString";
+                                    row["Coordinates"] = paths.GetRawText();
+                                    coordinatesDetected = true;
+                                    detectedGeomType = "LineString";
+                                }
+                                // D. ESRI ArcGIS Point format: { x: ..., y: ... }
+                                else if (gRoot.TryGetProperty("x", out var gx) && gRoot.TryGetProperty("y", out var gy))
+                                {
+                                    row["Geometry_Type"] = "Point";
+                                    row["Coordinates"] = $"[{gx.GetRawText()}, {gy.GetRawText()}]";
+                                    coordinatesDetected = true;
+                                    detectedGeomType = "Point";
+                                }
                             }
                         }
                         catch { }
+                    }
+                    // 3. Direct coordinates / rings property on row
+                    else if (!string.IsNullOrWhiteSpace(directCoordinates))
+                    {
+                        string gType = !string.IsNullOrWhiteSpace(customGeomType) ? customGeomType : "Polygon";
+                        row["Geometry_Type"] = gType;
+                        row["Coordinates"] = directCoordinates;
+                        coordinatesDetected = true;
+                        detectedGeomType = gType;
                     }
                 }
                 else

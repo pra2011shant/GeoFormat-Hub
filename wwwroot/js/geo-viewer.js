@@ -520,25 +520,52 @@ function displayResults(data) {
             let geomType = row.Geometry_Type || row.GeometryType || "Point";
             let coords = null;
 
-            // 1. Check for embedded GeometryJSON (e.g. "{ \"type\": \"Point\", \"coordinates\": [ 84.08, 24.81 ] }")
-            if (row.GeometryJSON) {
+            // 1. Check for embedded Geometry JSON (ArcGIS rings/paths or GeoJSON coordinates)
+            const rawGeomField = row.geometry || row.GeometryJSON || row.geom || row.the_geom || row.geojson || row.shape;
+            if (rawGeomField) {
                 try {
-                    const gJson = typeof row.GeometryJSON === 'string' ? JSON.parse(row.GeometryJSON) : row.GeometryJSON;
-                    if (gJson && gJson.coordinates) {
-                        geomType = gJson.type || geomType;
-                        coords = gJson.coordinates;
+                    const gJson = typeof rawGeomField === 'string' ? JSON.parse(rawGeomField) : rawGeomField;
+                    if (gJson) {
+                        // A. GeoJSON format: { type: "Polygon", coordinates: [...] }
+                        if (gJson.coordinates) {
+                            geomType = gJson.type || geomType;
+                            coords = gJson.coordinates;
+                        }
+                        // B. ESRI ArcGIS Polygon format: { rings: [[[86.55, 25.25], ...]] }
+                        else if (gJson.rings && Array.isArray(gJson.rings)) {
+                            geomType = "Polygon";
+                            coords = gJson.rings;
+                        }
+                        // C. ESRI ArcGIS LineString format: { paths: [[[86.55, 25.25], ...]] }
+                        else if (gJson.paths && Array.isArray(gJson.paths)) {
+                            geomType = "LineString";
+                            coords = gJson.paths.length === 1 ? gJson.paths[0] : gJson.paths;
+                        }
+                        // D. ESRI ArcGIS Point format: { x: 86.55, y: 25.25 }
+                        else if (gJson.x !== undefined && gJson.y !== undefined) {
+                            geomType = "Point";
+                            coords = [parseFloat(gJson.x), parseFloat(gJson.y)];
+                        }
                     }
                 } catch (e) { }
             }
 
-            // 2. Check for Coordinates array/string
+            // 2. Check for direct rings / paths / coordinates property on row
+            if (!coords && row.rings) {
+                try {
+                    coords = typeof row.rings === 'string' ? JSON.parse(row.rings) : row.rings;
+                    geomType = "Polygon";
+                } catch (e) { }
+            }
+
+            // 3. Check for Coordinates array/string
             if (!coords && row.Coordinates) {
                 try {
                     coords = typeof row.Coordinates === 'string' ? JSON.parse(row.Coordinates) : row.Coordinates;
                 } catch (e) { }
             }
 
-            // 3. Check for Longitude and Latitude property variations (strings or numbers)
+            // 4. Check for Longitude and Latitude property variations (strings or numbers)
             if (!coords) {
                 const lonVal = row.Longitude !== undefined ? row.Longitude : (row.lon !== undefined ? row.lon : (row.lng !== undefined ? row.lng : row.long));
                 const latVal = row.Latitude !== undefined ? row.Latitude : (row.lat !== undefined ? row.lat : row.y);
@@ -554,6 +581,7 @@ function displayResults(data) {
             if (coords && Array.isArray(coords)) {
                 const props = Object.assign({}, row);
                 delete props.GeometryJSON;
+                delete props.geometry;
                 features.push({
                     type: "Feature",
                     geometry: {
