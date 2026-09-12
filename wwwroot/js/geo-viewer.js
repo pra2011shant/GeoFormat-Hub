@@ -72,37 +72,6 @@ function copyContent(elementId) {
     }
 }
 
-function loadSampleData() {
-    showClientAlert("Loading sample GIS dataset...", "info");
-    fetch('/sample_data.geojson')
-        .then(response => {
-            if (!response.ok) throw new Error("Could not fetch sample dataset");
-            return response.text();
-        })
-        .then(text => {
-            window.uploadedRawJson = text;
-            window.uploadedFileName = 'sample_cities.geojson';
-            const blob = new Blob([text], { type: 'application/geo+json' });
-            const file = new File([blob], 'sample_cities.geojson', { type: 'application/geo+json' });
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            const fileInput = document.getElementById('geoFileInput');
-            if (fileInput) {
-                fileInput.files = dataTransfer.files;
-                const changeEvent = new Event('change', { bubbles: true });
-                fileInput.dispatchEvent(changeEvent);
-            }
-            
-            const uploadForm = document.getElementById('uploadForm');
-            if (uploadForm) {
-                uploadForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-            }
-        })
-        .catch(err => {
-            showClientAlert("Error loading sample data: " + err.message, 'danger');
-        });
-}
-
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
