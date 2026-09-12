@@ -208,6 +208,122 @@ function parseWktGeometry(wkt) {
 }
 
 /**
+ * Native, dependency-free TopoJSON Topology to standard GeoJSON FeatureCollection converter.
+ * Decodes quantized delta arcs, applies scale/translate transforms, and stitches polygon/line rings.
+ */
+function topojsonToGeojson(topology) {
+    if (!topology || topology.type !== 'Topology' || !topology.objects) return null;
+
+    const scale = topology.transform?.scale || [1, 1];
+    const translate = topology.transform?.translate || [0, 0];
+    const hasTransform = !!topology.transform;
+
+    const decodedArcs = (topology.arcs || []).map(arc => {
+        let x = 0, y = 0;
+        return arc.map(pt => {
+            if (hasTransform) {
+                x += pt[0];
+                y += pt[1];
+                return [x * scale[0] + translate[0], y * scale[1] + translate[1]];
+            } else {
+                return [pt[0], pt[1]];
+            }
+        });
+    });
+
+    function getArc(index) {
+        if (index >= 0) {
+            return decodedArcs[index] || [];
+        } else {
+            const arc = decodedArcs[~index] || [];
+            return arc.slice().reverse();
+        }
+    }
+
+    function stitchArcs(arcIndices) {
+        const ring = [];
+        for (let i = 0; i < arcIndices.length; i++) {
+            const arc = getArc(arcIndices[i]);
+            for (let j = (i === 0 ? 0 : 1); j < arc.length; j++) {
+                ring.push(arc[j]);
+            }
+        }
+        if (ring.length > 0) {
+            const first = ring[0];
+            const last = ring[ring.length - 1];
+            if (first[0] !== last[0] || first[1] !== last[1]) {
+                ring.push([first[0], first[1]]);
+            }
+        }
+        return ring;
+    }
+
+    function decodeGeometry(geom) {
+        if (!geom) return null;
+        if (geom.type === 'Polygon') {
+            const coordinates = (geom.arcs || []).map(ringArcs => stitchArcs(ringArcs));
+            return { type: 'Polygon', coordinates: coordinates };
+        } else if (geom.type === 'MultiPolygon') {
+            const coordinates = (geom.arcs || []).map(polyArcs => 
+                polyArcs.map(ringArcs => stitchArcs(ringArcs))
+            );
+            return { type: 'MultiPolygon', coordinates: coordinates };
+        } else if (geom.type === 'LineString') {
+            const coordinates = stitchArcs(geom.arcs || []);
+            return { type: 'LineString', coordinates: coordinates };
+        } else if (geom.type === 'MultiLineString') {
+            const coordinates = (geom.arcs || []).map(lineArcs => stitchArcs(lineArcs));
+            return { type: 'MultiLineString', coordinates: coordinates };
+        } else if (geom.type === 'Point') {
+            let coords = geom.coordinates;
+            if (hasTransform && coords) {
+                coords = [coords[0] * scale[0] + translate[0], coords[1] * scale[1] + translate[1]];
+            }
+            return { type: 'Point', coordinates: coords };
+        } else if (geom.type === 'MultiPoint') {
+            let coords = (geom.coordinates || []).map(c => {
+                return hasTransform ? [c[0] * scale[0] + translate[0], c[1] * scale[1] + translate[1]] : c;
+            });
+            return { type: 'MultiPoint', coordinates: coords };
+        }
+        return null;
+    }
+
+    const features = [];
+    for (let key in topology.objects) {
+        const obj = topology.objects[key];
+        if (obj.type === 'GeometryCollection' && Array.isArray(obj.geometries)) {
+            obj.geometries.forEach((g, idx) => {
+                const geom = decodeGeometry(g);
+                if (geom) {
+                    features.push({
+                        type: 'Feature',
+                        id: g.id || `${key}_${idx + 1}`,
+                        properties: Object.assign({}, g.properties || {}, { Layer_Name: key }),
+                        geometry: geom
+                    });
+                }
+            });
+        } else {
+            const geom = decodeGeometry(obj);
+            if (geom) {
+                features.push({
+                    type: 'Feature',
+                    id: obj.id || key,
+                    properties: Object.assign({}, obj.properties || {}, { Layer_Name: key }),
+                    geometry: geom
+                });
+            }
+        }
+    }
+
+    return {
+        type: 'FeatureCollection',
+        features: features
+    };
+}
+
+/**
  * Universal extractor for row geometry supporting ANY field format, nested JSON, ArcGIS, WKT, Lat/Long.
  */
 function extractRowGeometry(row) {
@@ -839,14 +955,19 @@ function displayResults(data) {
 
     let rawObj = null;
 
-    if (data.rawJson) {
+    const sourceRawJson = data.rawJson || window.uploadedRawJson;
+    if (sourceRawJson) {
         try {
-            const parsed = typeof data.rawJson === 'string' ? JSON.parse(data.rawJson) : data.rawJson;
-            if (parsed && (parsed.type === 'FeatureCollection' || parsed.type === 'Feature')) {
-                rawObj = parsed;
+            const parsed = typeof sourceRawJson === 'string' ? JSON.parse(sourceRawJson) : sourceRawJson;
+            if (parsed) {
+                if (parsed.type === 'FeatureCollection' || parsed.type === 'Feature') {
+                    rawObj = parsed;
+                } else if (parsed.type === 'Topology') {
+                    rawObj = topojsonToGeojson(parsed);
+                }
             }
         } catch (e) {
-            console.warn("Could not parse rawJson as GeoJSON:", e);
+            console.warn("Could not parse rawJson as GeoJSON/TopoJSON:", e);
         }
     }
 

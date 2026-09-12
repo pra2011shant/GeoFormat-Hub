@@ -130,6 +130,12 @@ namespace GeoFormat_Hub.Services
                             ParseFeatureCollection(features, dataset);
                             return;
                         }
+                        else if (string.Equals(type, "Topology", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dataset.DetectedType = "TopoJSON Topology";
+                            ParseTopoJsonDocument(root, dataset);
+                            return;
+                        }
                         else if (string.Equals(type, "Feature", StringComparison.OrdinalIgnoreCase))
                         {
                             dataset.DetectedType = "GeoJSON Feature";
@@ -214,6 +220,240 @@ namespace GeoFormat_Hub.Services
 
             dataset.Columns = columns;
             dataset.Rows = new List<Dictionary<string, object?>> { row };
+            dataset.GeometryTypeSummary = string.Join(", ", geometryTypes.Select(kv => $"{kv.Key} ({kv.Value})"));
+        }
+
+        /// <summary>
+        /// Parses TopoJSON Topology object, decodes quantized arcs and transform, and extracts Features with standard Polygons/MultiPolygons.
+        /// </summary>
+        private void ParseTopoJsonDocument(JsonElement root, GeoDataset dataset)
+        {
+            dataset.HasGeometry = true;
+            double scaleX = 1.0, scaleY = 1.0;
+            double transX = 0.0, transY = 0.0;
+            bool hasTransform = false;
+
+            if (root.TryGetProperty("transform", out var transform) && transform.ValueKind == JsonValueKind.Object)
+            {
+                hasTransform = true;
+                if (transform.TryGetProperty("scale", out var scale) && scale.ValueKind == JsonValueKind.Array && scale.GetArrayLength() >= 2)
+                {
+                    scaleX = scale[0].GetDouble();
+                    scaleY = scale[1].GetDouble();
+                }
+                if (transform.TryGetProperty("translate", out var translate) && translate.ValueKind == JsonValueKind.Array && translate.GetArrayLength() >= 2)
+                {
+                    transX = translate[0].GetDouble();
+                    transY = translate[1].GetDouble();
+                }
+            }
+
+            var decodedArcs = new List<List<double[]>>();
+            if (root.TryGetProperty("arcs", out var arcs) && arcs.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var arc in arcs.EnumerateArray())
+                {
+                    var arcPoints = new List<double[]>();
+                    long px = 0, py = 0;
+                    if (arc.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var pt in arc.EnumerateArray())
+                        {
+                            if (pt.ValueKind == JsonValueKind.Array && pt.GetArrayLength() >= 2)
+                            {
+                                long dx = pt[0].GetInt64();
+                                long dy = pt[1].GetInt64();
+                                px += dx;
+                                py += dy;
+
+                                double lon = hasTransform ? (px * scaleX + transX) : (double)dx;
+                                double lat = hasTransform ? (py * scaleY + transY) : (double)dy;
+                                arcPoints.Add(new double[] { lon, lat });
+                            }
+                        }
+                    }
+                    decodedArcs.Add(arcPoints);
+                }
+            }
+
+            List<double[]> GetArc(int arcIndex)
+            {
+                if (arcIndex >= 0 && arcIndex < decodedArcs.Count)
+                {
+                    return decodedArcs[arcIndex];
+                }
+                else if (arcIndex < 0)
+                {
+                    int revIndex = ~arcIndex;
+                    if (revIndex >= 0 && revIndex < decodedArcs.Count)
+                    {
+                        var original = decodedArcs[revIndex];
+                        var reversed = new List<double[]>(original);
+                        reversed.Reverse();
+                        return reversed;
+                    }
+                }
+                return new List<double[]>();
+            }
+
+            List<double[]> StitchArcs(JsonElement ringArcs)
+            {
+                var ring = new List<double[]>();
+                int arcCount = 0;
+                if (ringArcs.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var arcEl in ringArcs.EnumerateArray())
+                    {
+                        int arcIdx = arcEl.GetInt32();
+                        var arcPts = GetArc(arcIdx);
+                        int startJ = (arcCount == 0 ? 0 : 1);
+                        for (int j = startJ; j < arcPts.Count; j++)
+                        {
+                            ring.Add(arcPts[j]);
+                        }
+                        arcCount++;
+                    }
+                }
+                if (ring.Count > 0)
+                {
+                    var first = ring[0];
+                    var last = ring[ring.Count - 1];
+                    if (first[0] != last[0] || first[1] != last[1])
+                    {
+                        ring.Add(new double[] { first[0], first[1] });
+                    }
+                }
+                return ring;
+            }
+
+            var columnSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var tempRows = new List<Dictionary<string, object?>>();
+            var geometryTypes = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            int featureIndex = 1;
+
+            if (root.TryGetProperty("objects", out var objects) && objects.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var objProp in objects.EnumerateObject())
+                {
+                    var obj = objProp.Value;
+                    string objName = objProp.Name;
+
+                    void ProcessGeometryItem(JsonElement geomEl)
+                    {
+                        var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                        row["Feature_Id"] = featureIndex;
+                        row["Layer_Name"] = objName;
+
+                        string geomType = "Unknown";
+                        if (geomEl.TryGetProperty("type", out var typeProp) && typeProp.ValueKind == JsonValueKind.String)
+                        {
+                            geomType = typeProp.GetString() ?? "Unknown";
+                        }
+                        row["Geometry_Type"] = geomType;
+
+                        if (!geometryTypes.ContainsKey(geomType)) geometryTypes[geomType] = 0;
+                        geometryTypes[geomType]++;
+
+                        // Extract properties
+                        if (geomEl.TryGetProperty("properties", out var props) && props.ValueKind == JsonValueKind.Object)
+                        {
+                            foreach (var p in props.EnumerateObject())
+                            {
+                                columnSet.Add(p.Name);
+                                row[p.Name] = ExtractJsonValue(p.Value);
+                            }
+                        }
+
+                        if (geomEl.TryGetProperty("id", out var idProp))
+                        {
+                            columnSet.Add("Id");
+                            if (!row.ContainsKey("Id")) row["Id"] = ExtractJsonValue(idProp);
+                        }
+
+                        // Decode Geometry
+                        if (string.Equals(geomType, "Polygon", StringComparison.OrdinalIgnoreCase) &&
+                            geomEl.TryGetProperty("arcs", out var polyArcs) && polyArcs.ValueKind == JsonValueKind.Array)
+                        {
+                            var ringsList = new List<List<double[]>>();
+                            foreach (var ringArc in polyArcs.EnumerateArray())
+                            {
+                                ringsList.Add(StitchArcs(ringArc));
+                            }
+                            row["GeometryJSON"] = JsonSerializer.Serialize(new { type = "Polygon", coordinates = ringsList });
+                            row["Coordinates"] = $"Polygon ({ringsList.Sum(r => r.Count)} vertices)";
+                        }
+                        else if (string.Equals(geomType, "MultiPolygon", StringComparison.OrdinalIgnoreCase) &&
+                            geomEl.TryGetProperty("arcs", out var multiPolyArcs) && multiPolyArcs.ValueKind == JsonValueKind.Array)
+                        {
+                            var polysList = new List<List<List<double[]>>>();
+                            int totalVertices = 0;
+                            foreach (var poly in multiPolyArcs.EnumerateArray())
+                            {
+                                var rings = new List<List<double[]>>();
+                                if (poly.ValueKind == JsonValueKind.Array)
+                                {
+                                    foreach (var ringArc in poly.EnumerateArray())
+                                    {
+                                        var stitched = StitchArcs(ringArc);
+                                        totalVertices += stitched.Count;
+                                        rings.Add(stitched);
+                                    }
+                                }
+                                polysList.Add(rings);
+                            }
+                            row["GeometryJSON"] = JsonSerializer.Serialize(new { type = "MultiPolygon", coordinates = polysList });
+                            row["Coordinates"] = $"MultiPolygon ({polysList.Count} parts, {totalVertices} vertices)";
+                        }
+                        else if (string.Equals(geomType, "LineString", StringComparison.OrdinalIgnoreCase) &&
+                            geomEl.TryGetProperty("arcs", out var lineArcs) && lineArcs.ValueKind == JsonValueKind.Array)
+                        {
+                            var linePts = StitchArcs(lineArcs);
+                            row["GeometryJSON"] = JsonSerializer.Serialize(new { type = "LineString", coordinates = linePts });
+                            row["Coordinates"] = $"LineString ({linePts.Count} vertices)";
+                        }
+                        else if (string.Equals(geomType, "MultiLineString", StringComparison.OrdinalIgnoreCase) &&
+                            geomEl.TryGetProperty("arcs", out var multiLineArcs) && multiLineArcs.ValueKind == JsonValueKind.Array)
+                        {
+                            var linesList = new List<List<double[]>>();
+                            foreach (var lineArc in multiLineArcs.EnumerateArray())
+                            {
+                                linesList.Add(StitchArcs(lineArc));
+                            }
+                            row["GeometryJSON"] = JsonSerializer.Serialize(new { type = "MultiLineString", coordinates = linesList });
+                            row["Coordinates"] = $"MultiLineString ({linesList.Count} parts)";
+                        }
+
+                        tempRows.Add(row);
+                        featureIndex++;
+                    }
+
+                    if (obj.TryGetProperty("type", out var objType) &&
+                        string.Equals(objType.GetString(), "GeometryCollection", StringComparison.OrdinalIgnoreCase) &&
+                        obj.TryGetProperty("geometries", out var geometries) && geometries.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var g in geometries.EnumerateArray())
+                        {
+                            ProcessGeometryItem(g);
+                        }
+                    }
+                    else
+                    {
+                        ProcessGeometryItem(obj);
+                    }
+                }
+            }
+
+            var columns = new List<string> { "Feature_Id", "Geometry_Type", "Layer_Name", "Coordinates" };
+            foreach (var col in columnSet)
+            {
+                if (!columns.Contains(col, StringComparer.OrdinalIgnoreCase))
+                {
+                    columns.Add(col);
+                }
+            }
+
+            dataset.Columns = columns;
+            dataset.Rows = tempRows;
             dataset.GeometryTypeSummary = string.Join(", ", geometryTypes.Select(kv => $"{kv.Key} ({kv.Value})"));
         }
 
