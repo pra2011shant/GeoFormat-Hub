@@ -1284,28 +1284,102 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                 };
             }
 
+            function getFeatureCategoryMeta(feature) {
+                const gType = (feature.geometry?.type || '').toLowerCase();
+                const props = feature.properties || {};
+                const propStr = JSON.stringify(props).toLowerCase();
+
+                if (gType.includes('polygon')) {
+                    return {
+                        category: 'Polygon',
+                        icon: 'bi-bounding-box-circles',
+                        label: 'Boundary / Parcel',
+                        color: '#2563eb',
+                        fillColor: '#60a5fa',
+                        fillOpacity: 0.45,
+                        weight: 2.5
+                    };
+                } else if (gType.includes('line')) {
+                    if (propStr.includes('canal') || propStr.includes('river') || propStr.includes('minor') || propStr.includes('water') || propStr.includes('drain') || propStr.includes('branch')) {
+                        return {
+                            category: 'Canal',
+                            icon: 'bi-water',
+                            label: 'Canal / Waterway',
+                            color: '#06b6d4',
+                            fillColor: '#06b6d4',
+                            fillOpacity: 0,
+                            weight: 4
+                        };
+                    } else {
+                        return {
+                            category: 'Road',
+                            icon: 'bi-signpost-split-fill',
+                            label: 'Road / Highway / Route',
+                            color: '#f59e0b',
+                            fillColor: '#f59e0b',
+                            fillOpacity: 0,
+                            weight: 4.5
+                        };
+                    }
+                } else {
+                    if (propStr.includes('well') || propStr.includes('tube') || propStr.includes('boring') || propStr.includes('pump') || propStr.includes('water_source')) {
+                        return {
+                            category: 'Well',
+                            icon: 'bi-droplet-fill',
+                            label: 'Tube-well / Water Asset',
+                            color: '#0284c7',
+                            fillColor: '#38bdf8',
+                            fillOpacity: 0.9,
+                            weight: 2,
+                            radius: 8
+                        };
+                    } else if (propStr.includes('tower') || propStr.includes('station') || propStr.includes('plant')) {
+                        return {
+                            category: 'Station',
+                            icon: 'bi-broadcast-pin',
+                            label: 'Station / Asset',
+                            color: '#7c3aed',
+                            fillColor: '#a78bfa',
+                            fillOpacity: 0.9,
+                            weight: 2,
+                            radius: 8
+                        };
+                    } else {
+                        return {
+                            category: 'Point',
+                            icon: 'bi-geo-alt-fill',
+                            label: 'Location Point',
+                            color: '#ffffff',
+                            fillColor: '#2563eb',
+                            fillOpacity: 0.9,
+                            weight: 2,
+                            radius: 8
+                        };
+                    }
+                }
+            }
+
             geoJsonLayer = L.geoJSON(plotGeoJson, {
                 renderer: L.canvas(),
                 pointToLayer: function (feature, latlng) {
+                    const meta = getFeatureCategoryMeta(feature);
                     return L.circleMarker(latlng, {
-                        radius: 8,
-                        fillColor: "#3b82f6",
-                        color: "#ffffff",
-                        weight: 2,
+                        radius: meta.radius || 8,
+                        fillColor: meta.fillColor,
+                        color: meta.color,
+                        weight: meta.weight || 2,
                         opacity: 1,
-                        fillOpacity: 0.85
+                        fillOpacity: meta.fillOpacity || 0.85
                     });
                 },
                 style: function (feature) {
-                    const gType = (feature.geometry?.type || '').toLowerCase();
-                    const isPoly = gType === 'polygon' || gType === 'multipolygon';
-                    const isLine = gType === 'linestring' || gType === 'multilinestring';
+                    const meta = getFeatureCategoryMeta(feature);
                     return {
-                        color: isPoly ? "#2563eb" : (isLine ? "#0284c7" : "#3b82f6"),
-                        weight: isPoly ? 2.5 : (isLine ? 4 : 2),
-                        opacity: isLine ? 1 : 0.9,
-                        fillColor: isPoly ? "#60a5fa" : "#93c5fd",
-                        fillOpacity: isPoly ? 0.45 : (isLine ? 0 : 0.65)
+                        color: meta.color,
+                        weight: meta.weight,
+                        opacity: 1,
+                        fillColor: meta.fillColor,
+                        fillOpacity: meta.fillOpacity
                     };
                 },
                 onEachFeature: function (feature, layer) {
@@ -1314,14 +1388,15 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
 
                     const metrics = feature.metrics || calculateSpatialMetrics(feature.geometry);
                     const props = feature.properties || {};
-                    const titleName = props.NAME || props.V_NAME || props.HAB_NAME || props.GPNAME_1 || props.Name || props.name || props.Title || props.id || props.Id || "Feature Details";
+                    const meta = getFeatureCategoryMeta(feature);
+                    const titleName = props.NAME || props.district || props.V_NAME || props.HAB_NAME || props.GPNAME_1 || props.Name || props.name || props.Title || props.id || props.Id || `${meta.label} Details`;
 
                     let popupHtml = `
                         <div class="popup-pro-header">
                             <span class="fw-bold text-white d-flex align-items-center gap-1">
-                                <i class="bi bi-geo-alt-fill text-primary"></i> ${titleName}
+                                <i class="bi ${meta.icon} text-primary"></i> ${titleName}
                             </span>
-                            <span class="badge bg-primary-subtle text-primary">${feature.geometry?.type || 'Feature'}</span>
+                            <span class="badge bg-primary-subtle text-primary">${meta.label}</span>
                         </div>
                         <div class="popup-pro-body">
                             <div class="popup-calc-chips">
@@ -1329,7 +1404,8 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                                 <span class="popup-chip"><i class="bi bi-bounding-box-circles me-1"></i>${metrics.areaKm2.toFixed(3)} km²</span>
                                 <span class="popup-chip"><i class="bi bi-bezier2 me-1"></i>${metrics.perimeterKm.toFixed(2)} km</span>
                                 <span class="popup-chip">${metrics.areaHectares.toFixed(1)} ha</span>` : 
-                                (metrics.perimeterKm > 0 ? `<span class="popup-chip"><i class="bi bi-bezier2 me-1"></i>Length: ${metrics.perimeterKm.toFixed(3)} km</span><span class="popup-chip">${Math.round(metrics.perimeterM).toLocaleString()} m</span>` : '')}
+                                (metrics.perimeterKm > 0 ? `<span class="popup-chip"><i class="bi bi-bezier2 me-1"></i>Length: ${metrics.perimeterKm.toFixed(3)} km</span><span class="popup-chip">${Math.round(metrics.perimeterM).toLocaleString()} m</span>` : 
+                                (metrics.centroid ? `<span class="popup-chip"><i class="bi bi-geo-alt me-1"></i>${metrics.centroid[0].toFixed(4)}°, ${metrics.centroid[1].toFixed(4)}°</span>` : ''))}
                             </div>
                             <table class="popup-pro-table">`;
 
@@ -1357,13 +1433,13 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                     layer.on('mouseover', function () {
                         if (floatingHud) {
                             floatingHud.classList.remove('d-none');
-                            document.getElementById('hudFeatureName').textContent = titleName;
+                            document.getElementById('hudFeatureName').textContent = `${titleName} (${meta.label})`;
                             document.getElementById('hudAreaKm').textContent = metrics.areaKm2 > 0 ? metrics.areaKm2.toFixed(4) : "0.00";
-                            document.getElementById('hudAreaHa').textContent = metrics.areaKm2 > 0 ? `${metrics.areaHectares.toFixed(2)} ha (${metrics.areaAcres.toFixed(1)} acres)` : (metrics.perimeterKm > 0 ? `${metrics.perimeterKm.toFixed(3)} km line` : "-");
+                            document.getElementById('hudAreaHa').textContent = metrics.areaKm2 > 0 ? `${metrics.areaHectares.toFixed(2)} ha (${metrics.areaAcres.toFixed(1)} acres)` : (metrics.perimeterKm > 0 ? `${metrics.perimeterKm.toFixed(3)} km length` : "-");
                             document.getElementById('hudPerimeterKm').textContent = metrics.perimeterKm > 0 ? metrics.perimeterKm.toFixed(3) : "0.00";
                             document.getElementById('hudPerimeterM').textContent = metrics.perimeterM > 0 ? `${Math.round(metrics.perimeterM).toLocaleString()} meters` : "-";
                             document.getElementById('hudVertexCount').textContent = metrics.vertexCount.toLocaleString();
-                            document.getElementById('hudGeomType').textContent = feature.geometry?.type || 'Geometry';
+                            document.getElementById('hudGeomType').textContent = `${feature.geometry?.type || 'Geometry'} [${meta.category}]`;
                             document.getElementById('hudCentroid').textContent = metrics.centroid ? `${metrics.centroid[0].toFixed(4)}°, ${metrics.centroid[1].toFixed(4)}°` : "--";
                         }
 
