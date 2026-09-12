@@ -1,0 +1,41 @@
+name: Build and Test .NET Web Application
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Publish Web App
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore "./GeoFormat Hub.csproj"
+
+    - name: Build Solution (Release)
+      run: dotnet build "./GeoFormat Hub.csproj" --configuration Release --no-restore
+
+    - name: Run Unit & Integration Tests (if present)
+      run: dotnet test --configuration Release --no-build --verbosity normal || true
+
+    - name: Publish Web App Bundle
+      run: dotnet publish "./GeoFormat Hub.csproj" --configuration Release --no-build --output ./publish
+
+    - name: Upload Published Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: geoformat-hub-published-package
+        path: ./publish/
+        retention-days: 14

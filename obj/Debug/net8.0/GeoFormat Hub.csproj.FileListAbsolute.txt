@@ -1,0 +1,88 @@
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\appsettings.Development.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\appsettings.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.staticwebassets.runtime.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.staticwebassets.endpoints.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.exe
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.deps.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.runtimeconfig.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.pdb
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\ClosedXML.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\ClosedXML.Parser.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\CsvHelper.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\ExcelNumberFormat.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\RBush.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\SixLabors.Fonts.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\System.IO.Packaging.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.csproj.AssemblyReference.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rpswa.dswa.cache.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.GeneratedMSBuildEditorConfig.editorconfig
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.AssemblyInfoInputs.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.AssemblyInfo.cs
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.csproj.CoreCompileInputs.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.MvcApplicationPartsAssemblyInfo.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.RazorAssemblyInfo.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.RazorAssemblyInfo.cs
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rjimswa.dswa.cache.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\scopedcss\bundle\GeoFormat Hub.styles.css
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\scopedcss\projectbundle\GeoFormat Hub.bundle.scp.css
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.build.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.build.json.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.development.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\swae.build.ex.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoForma.62E2E448.Up2Date
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\refint\GeoFormat Hub.dll
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.pdb
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.genruntimeconfig.cache
+E:\Current Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\ref\GeoFormat Hub.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\appsettings.Development.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\appsettings.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.staticwebassets.runtime.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.staticwebassets.endpoints.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.deps.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.runtimeconfig.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\GeoFormat Hub.pdb
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\ClosedXML.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\ClosedXML.Parser.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\CsvHelper.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\ExcelNumberFormat.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\RBush.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\SixLabors.Fonts.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\bin\Debug\net8.0\System.IO.Packaging.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.csproj.AssemblyReference.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rpswa.dswa.cache.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.GeneratedMSBuildEditorConfig.editorconfig
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.AssemblyInfoInputs.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.AssemblyInfo.cs
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.csproj.CoreCompileInputs.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.MvcApplicationPartsAssemblyInfo.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.RazorAssemblyInfo.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.RazorAssemblyInfo.cs
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rjimswa.dswa.cache.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rjsmrazor.dswa.cache.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\rjsmcshtml.dswa.cache.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\scopedcss\Views\Shared\_Layout.cshtml.rz.scp.css
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\scopedcss\bundle\GeoFormat Hub.styles.css
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\scopedcss\projectbundle\GeoFormat Hub.bundle.scp.css
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.build.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.build.json.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.development.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\swae.build.ex.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoForma.62E2E448.Up2Date
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\refint\GeoFormat Hub.dll
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.pdb
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\GeoFormat Hub.genruntimeconfig.cache
+E:\Work\GeoFormat Hub\GeoFormat Hub\GeoFormat Hub\obj\Debug\net8.0\ref\GeoFormat Hub.dll

@@ -1,0 +1,225 @@
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-subtle: #eff6ff;
+  --accent-color: #06b6d4;
+  --surface-color: #ffffff;
+  --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  --border-radius: 12px;
+  --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+/* Upload Dropzone */
+.dropzone-container {
+  border: 2px dashed #94a3b8;
+  border-radius: var(--border-radius);
+  background-color: #ffffff;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  transition: all 0.25s ease-in-out;
+  cursor: pointer;
+  position: relative;
+}
+
+.dropzone-container:hover, .dropzone-container.dragover {
+  border-color: var(--primary-color);
+  background-color: var(--primary-subtle);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.dropzone-icon {
+  font-size: 3.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.dropzone-container:hover .dropzone-icon {
+  transform: scale(1.1);
+}
+
+.file-input-hidden {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* File Info Box */
+.selected-file-card {
+  background: #f1f5f9;
+  border-radius: 10px;
+  border-left: 4px solid var(--primary-color);
+  padding: 1rem;
+  margin-top: 1rem;
+  transition: all 0.2s ease;
+}
+
+/* Code Preview Box */
+.json-preview-box {
+  background: #0f172a;
+  color: #38bdf8;
+  border-radius: var(--border-radius);
+  padding: 1.25rem;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.875rem;
+  max-height: 380px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid #1e293b;
+}
+
+/* Badge & Stat pills */
+.badge-geo {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.btn-primary-gradient {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  font-weight: 600;
+  padding: 0.6rem 1.4rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary-gradient:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+/* Map Container */
+#mapContainer {
+  height: 480px;
+  width: 100%;
+  border-radius: var(--border-radius);
+  z-index: 1;
+  border: 1px solid #cbd5e1;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.leaflet-popup-content {
+  margin: 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+}
+
+.popup-table {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+}
+
+.popup-table td {
+  padding: 3px 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.popup-table td.prop-key {
+  font-weight: 600;
+  color: #475569;
+}
+
+/* Interactive Data Table */
+.data-table-container {
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.table-custom {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+}
+
+.table-custom thead th {
+  position: sticky;
+  top: 0;
+  background-color: #1e293b;
+  color: #f8fafc;
+  font-weight: 600;
+  border: none;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.table-custom tbody tr {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.table-custom tbody tr:hover {
+  background-color: #eff6ff !important;
+}
+
+.table-custom tbody tr.table-active-row {
+  background-color: #dbeafe !important;
+  font-weight: 500;
+}
+
+/* Tab Navigation */
+.nav-pills-custom .nav-link {
+  color: #475569;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.nav-pills-custom .nav-link.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+}
+
+/* Export Panel */
+.export-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+}
+
+.footer {
+  margin-top: auto;
+}

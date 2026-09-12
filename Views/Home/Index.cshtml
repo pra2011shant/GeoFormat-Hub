@@ -1,0 +1,367 @@
+@model GeoFormat_Hub.Models.FileUploadViewModel
+@{
+    ViewData["Title"] = "GeoFormat Hub - Geospatial Converter & Visualizer";
+    bool hasData = Model.IsSuccess && Model.Dataset != null && Model.Dataset.Rows.Count > 0;
+}
+
+<div class="row justify-content-center">
+    <div class="col-xl-11 col-lg-12">
+        <!-- Hero Header -->
+        <div class="text-center mb-4">
+            <h1 class="fw-bold text-dark mb-2 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-globe-americas text-primary"></i>
+                <span>GeoFormat <span class="text-primary">Hub</span></span>
+            </h1>
+            <p class="text-muted fs-6">
+                Upload <strong>JSON / GeoJSON</strong> files, visualize on <strong>Interactive Leaflet Map</strong> & <strong>HTML Data Grid</strong>, and convert to <strong>Excel (.xlsx)</strong>, <strong>CSV (.csv)</strong>, <strong>SQL (.sql)</strong>, <strong>XML (.xml)</strong>, <strong>GeoJSON (.geojson)</strong>, or <strong>JSON (.json)</strong>.
+            </p>
+        </div>
+
+        <!-- Dynamic Status Alert -->
+        <div id="clientAlert" class="alert @(Model.IsSuccess ? "alert-success" : "alert-warning") alert-dismissible fade show shadow-sm mb-4 @(string.IsNullOrEmpty(Model.StatusMessage) ? "d-none" : "")" role="alert">
+            <div class="d-flex align-items-center">
+                <i id="clientAlertIcon" class="bi @(Model.IsSuccess ? "bi-check-circle-fill text-success" : "bi-exclamation-circle-fill") fs-4 me-2"></i>
+                <span id="clientAlertMessage">@Model.StatusMessage</span>
+            </div>
+            <button type="button" class="btn-close" onclick="hideClientAlert()" aria-label="Close"></button>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <form id="uploadForm" asp-controller="Home" asp-action="Index" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Drag & Drop Dropzone -->
+                    <div class="dropzone-container mb-3" id="dropZone">
+                        <input type="file" 
+                               id="geoFileInput" 
+                               name="GeoFile" 
+                               class="file-input-hidden" 
+                               accept=".json,.geojson,application/json,application/geo+json" />
+                        
+                        <div class="dropzone-content">
+                            <i class="bi bi-cloud-arrow-up dropzone-icon"></i>
+                            <h5 class="fw-semibold mb-1">Drag & Drop your JSON / GeoJSON file here</h5>
+                            <p class="text-muted small mb-2">Supported formats: <strong>.json</strong>, <strong>.geojson</strong></p>
+                            <div class="d-inline-flex align-items-center gap-1 badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 mb-3">
+                                <i class="bi bi-infinity"></i> <span>High Capacity Streaming: Upload any file size (50MB, 500MB, 1GB+)</span>
+                            </div>
+                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                <button type="button" class="btn btn-outline-primary px-4 rounded-pill" onclick="document.getElementById('geoFileInput').click()">
+                                    <i class="bi bi-folder2-open me-1"></i> Browse Files
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary px-3 rounded-pill" onclick="loadSampleData()">
+                                    <i class="bi bi-file-earmark-sample me-1"></i> Try Sample Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected File Info Card -->
+                    <div id="selectedFileInfo" class="selected-file-card d-none mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-filetype-json fs-2 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold text-dark" id="displayFileName">file.geojson</div>
+                                    <div class="text-muted small">
+                                        Size: <span id="displayFileSize" class="fw-medium">0 KB</span> | 
+                                        Format: <span id="displayFileExt" class="badge bg-primary-subtle text-primary">GEOJSON</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnClearFile" title="Remove selected file">
+                                <i class="bi bi-trash3"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Upload Progress Bar Container -->
+                    <div id="uploadProgressContainer" class="d-none mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1 small">
+                            <span id="uploadProgressStatus" class="fw-semibold text-primary">
+                                <i class="bi bi-cloud-arrow-up-fill me-1"></i> Uploading: 0%
+                            </span>
+                            <span id="uploadProgressStats" class="text-muted">0 MB / 0 MB (0 MB/s)</span>
+                        </div>
+                        <div class="progress" style="height: 10px; border-radius: 6px;">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+
+                    <span asp-validation-for="GeoFile" class="text-danger small d-block mb-3"></span>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <div class="text-muted small">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Streaming live processor with real-time progress
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-light border px-3" id="btnClientPreview" disabled>
+                                <i class="bi bi-eye me-1"></i> Quick Preview
+                            </button>
+                            <button type="submit" class="btn btn-primary-gradient px-4" id="btnUploadSubmit" disabled>
+                                <i class="bi bi-upload me-1"></i> Upload & Process Data
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Client-Side Quick Preview Section (Before upload) -->
+        <div id="clientPreviewContainer" class="card shadow-sm border-0 mb-4 d-none">
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-code-square text-primary me-2"></i>Client-side Fast Inspection
+                </h5>
+                <button class="btn btn-sm btn-outline-secondary" onclick="copyContent('clientJsonPreview')">
+                    <i class="bi bi-clipboard me-1"></i> Copy
+                </button>
+            </div>
+            <div class="card-body pt-0">
+                <div id="clientStats" class="mb-3 d-flex gap-2 flex-wrap"></div>
+                <pre class="json-preview-box" id="clientJsonPreview"></pre>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION: CONVERSION + STATS + MAP + TABLE -->
+        <div id="resultsSection" class="@(hasData ? "" : "d-none")">
+            
+            <!-- Conversion & Download Card -->
+            <div class="card shadow-sm border-0 mb-4 export-card">
+                <div class="card-body p-4">
+                    <div class="row align-items-center gy-3">
+                        <div class="col-lg-5">
+                            <h5 class="fw-bold mb-1 text-dark">
+                                <i class="bi bi-file-earmark-arrow-down text-primary me-2"></i>Data Conversion & Export
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                Select format to download converted dataset via ASP.NET Core Backend.
+                            </p>
+                        </div>
+                        <div class="col-lg-7">
+                            <form asp-controller="Home" asp-action="Export" method="post" class="d-flex flex-wrap gap-2 justify-content-lg-end align-items-center" id="exportForm">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="DatasetId" id="exportDatasetId" value="@Model.DatasetId" />
+                                <input type="hidden" name="FileName" id="exportFileName" value="@(Model.FileName ?? "GeoData")" />
+                                <input type="hidden" name="RawJson" id="exportRawJson" value="" />
+
+                                <!-- Format Dropdown -->
+                                <div class="input-group" style="max-width: 270px;">
+                                    <span class="input-group-text bg-white"><i class="bi bi-sliders"></i></span>
+                                    <select id="exportFormat" name="Format" class="form-select fw-medium">
+                                        <option value="excel">Excel (.xlsx)</option>
+                                        <option value="csv">CSV (.csv)</option>
+                                        <option value="sql">SQL Insert Query (.sql)</option>
+                                        <option value="xml">XML (.xml)</option>
+                                        <option value="json">Raw JSON (.json)</option>
+                                        <option value="geojson">GeoJSON (.geojson)</option>
+                                    </select>
+                                </div>
+
+                                <!-- SQL Table Name -->
+                                <div id="sqlTableGroup" class="d-none" style="max-width: 170px;">
+                                    <input type="text" class="form-control" name="TableName" id="tableNameInput" placeholder="Table Name" value="GeoData" />
+                                </div>
+
+                                <!-- Download Button with AJAX Blob support -->
+                                <button type="button" class="btn btn-success fw-semibold px-3 d-flex align-items-center gap-2" id="downloadBtn">
+                                    <i class="bi bi-download" id="exportIcon"></i>
+                                    <span id="exportBtnText">Download File</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metadata Stats Overview -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="text-muted small">Source File</div>
+                        <div class="fw-semibold text-truncate" id="statFileName">@(Model.FileName ?? "-")</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="text-muted small">Detected Type</div>
+                        <div class="fw-semibold text-primary" id="statDetectedType">@(Model.DetectedType ?? "JSON")</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="text-muted small">Total Records / Features</div>
+                        <div class="fw-semibold text-success fs-5" id="statTotalRecords">@(Model.Dataset?.TotalRecords ?? Model.FeatureCount)</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="stat-card">
+                        <div class="text-muted small">Geometry Summary</div>
+                        <div class="fw-semibold text-info text-truncate" id="statGeometrySummary">
+                            @(string.IsNullOrEmpty(Model.Dataset?.GeometryTypeSummary) ? "Non-spatial JSON" : Model.Dataset.GeometryTypeSummary)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization & Data Tabs -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-0">
+                    <ul class="nav nav-pills nav-pills-custom gap-2" id="previewTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="map-tab" data-bs-toggle="tab" data-bs-target="#mapTabPane" type="button" role="tab">
+                                <i class="bi bi-map me-1"></i> Map View (Leaflet.js)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="table-tab" data-bs-toggle="tab" data-bs-target="#tableTabPane" type="button" role="tab">
+                                <i class="bi bi-table me-1"></i> Tabular Grid (<span id="tableBadgeCount">@(Model.Dataset?.TotalRecords ?? 0)</span>)
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#rawTabPane" type="button" role="tab">
+                                <i class="bi bi-code-square me-1"></i> Raw JSON Preview
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="tab-content" id="previewTabsContent">
+                        
+                        <!-- TAB 1: Leaflet.js Map -->
+                        <div class="tab-pane fade show active" id="mapTabPane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="small text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Hover to highlight, click marker/polygon to inspect feature properties.
+                                </div>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" id="btnFitBounds">
+                                        <i class="bi bi-arrows-fullscreen me-1"></i> Zoom to Fit Layer
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="mapContainer"></div>
+                            <div id="noGeometryAlert" class="alert alert-info mt-3 d-none">
+                                <i class="bi bi-info-circle-fill me-1"></i> No spatial geometry coordinates found to plot on map. Please view records in the <strong>Tabular Grid</strong> tab.
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: HTML Data Table -->
+                        <div class="tab-pane fade" id="tableTabPane" role="tabpanel">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                <div class="input-group" style="max-width: 320px;">
+                                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                    <input type="text" class="form-control" id="tableSearchInput" placeholder="Search across all columns...">
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="small text-muted">Rows per page:</span>
+                                    <select class="form-select form-select-sm" id="pageSizeSelect" style="width: 85px;">
+                                        <option value="10">10</option>
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="data-table-container">
+                                <table class="table table-hover table-striped table-custom align-middle" id="dataTable">
+                                    <thead id="tableHead"></thead>
+                                    <tbody id="tableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Table Controls & Load More -->
+                            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 mt-3">
+                                <div class="small text-muted" id="tableInfo">Showing records</div>
+                                
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary px-3 rounded-pill d-none" id="btnLoadMore">
+                                        <i class="bi bi-arrow-down-circle me-1"></i> Load More (+50 rows)
+                                    </button>
+                                </div>
+
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0" id="tablePagination"></ul>
+                                </nav>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: Raw JSON Inspector -->
+                        <div class="tab-pane fade" id="rawTabPane" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="text-muted small fw-medium">
+                                    <i class="bi bi-info-circle text-primary me-1"></i> Formatted Preview:
+                                </span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="copyContent('serverRawJson')">
+                                    <i class="bi bi-clipboard me-1"></i> Copy Preview
+                                </button>
+                            </div>
+                            <pre class="json-preview-box" id="serverRawJson">@(Model.JsonPreview ?? Model.FileContent)</pre>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/geo-viewer.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            initUploadForm();
+            initExportForm();
+
+            // SQL Table input toggle
+            const formatSelect = document.getElementById('exportFormat') || document.getElementById('formatSelect');
+            const sqlTableGroup = document.getElementById('sqlTableGroup');
+            if (formatSelect) {
+                formatSelect.addEventListener('change', function () {
+                    if (this.value === 'sql') {
+                        sqlTableGroup?.classList.remove('d-none');
+                    } else {
+                        sqlTableGroup?.classList.add('d-none');
+                    }
+                });
+            }
+
+            @if (hasData)
+            {
+                <text>
+                const initialData = {
+                    datasetId: @Html.Raw(Json.Serialize(Model.DatasetId)),
+                    fileName: @Html.Raw(Json.Serialize(Model.FileName)),
+                    detectedType: @Html.Raw(Json.Serialize(Model.DetectedType)),
+                    totalRecords: @Model.Dataset!.TotalRecords,
+                    geometrySummary: @Html.Raw(Json.Serialize(Model.Dataset.GeometryTypeSummary)),
+                    hasGeometry: @(Model.Dataset.HasGeometry ? "true" : "false"),
+                    columns: @Html.Raw(Json.Serialize(Model.Dataset.Columns)),
+                    rows: @Html.Raw(Json.Serialize(Model.Dataset.Rows)),
+                    jsonPreview: @Html.Raw(Json.Serialize(Model.JsonPreview ?? Model.FileContent))
+                };
+                displayResults(initialData);
+                </text>
+            }
+
+            const mapTabBtn = document.getElementById('map-tab');
+            if (mapTabBtn) {
+                mapTabBtn.addEventListener('shown.bs.tab', function () {
+                    if (map) {
+                        map.invalidateSize();
+                        if (geoJsonLayer && geoJsonLayer.getBounds().isValid()) {
+                            map.fitBounds(geoJsonLayer.getBounds());
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

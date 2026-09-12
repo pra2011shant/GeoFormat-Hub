@@ -1,0 +1,65 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.2090, 28.6139]
+      },
+      "properties": {
+        "Name": "New Delhi",
+        "Country": "India",
+        "Population": 32941000,
+        "IsCapital": true
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [72.8777, 19.0760]
+      },
+      "properties": {
+        "Name": "Mumbai",
+        "Country": "India",
+        "Population": 20961000,
+        "IsCapital": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [77.5946, 12.9716]
+      },
+      "properties": {
+        "Name": "Bengaluru",
+        "Country": "India",
+        "Population": 13193000,
+        "IsCapital": false
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [77.0, 28.4],
+            [77.4, 28.4],
+            [77.4, 28.8],
+            [77.0, 28.8],
+            [77.0, 28.4]
+          ]
+        ]
+      },
+      "properties": {
+        "Name": "Delhi NCR Region",
+        "Country": "India",
+        "Population": 46000000,
+        "IsCapital": true
+      }
+    }
+  ]
+}
