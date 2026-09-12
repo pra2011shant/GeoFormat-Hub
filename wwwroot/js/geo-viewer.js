@@ -583,15 +583,21 @@ function displayResults(data) {
 }
 
 // =========================================================================
-// 5. LEAFLET.JS GIS MAP CONTROLLER (Canvas Accelerated & Safe Sampling)
+// 5. LEAFLET.JS GIS MAP CONTROLLER (Polygon Inspection & Spatial Search)
 // =========================================================================
 
+window.allMapLayers = [];
+let currentHighlightedLayer = null;
+
 /**
- * Initializes and plots GeoJSON features on Leaflet.js interactive map using Canvas renderer.
+ * Initializes and plots GeoJSON features on Leaflet.js interactive map with Polygon & Search support.
  */
 function renderMap(rawGeoJson) {
     const mapEl = document.getElementById('mapContainer');
     if (!mapEl) return;
+
+    window.allMapLayers = [];
+    currentHighlightedLayer = null;
 
     // Initialize map instance once with Canvas renderer
     if (!map) {
@@ -623,6 +629,14 @@ function renderMap(rawGeoJson) {
             "Light Canvas": cartoPositron,
             "Dark Canvas": cartoDark
         }).addTo(map);
+
+        // Map live search input listener
+        const mapSearchInput = document.getElementById('mapSearchInput');
+        if (mapSearchInput) {
+            mapSearchInput.addEventListener('input', debounce(function () {
+                searchFeaturesOnMap(this.value);
+            }, 200));
+        }
     }
 
     // Clean up previous layers
@@ -648,7 +662,7 @@ function renderMap(rawGeoJson) {
                 renderer: L.canvas(),
                 pointToLayer: function (feature, latlng) {
                     return L.circleMarker(latlng, {
-                        radius: 7,
+                        radius: 8,
                         fillColor: "#2563eb",
                         color: "#ffffff",
                         weight: 2,
@@ -657,21 +671,28 @@ function renderMap(rawGeoJson) {
                     });
                 },
                 style: function (feature) {
+                    const isPoly = feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
                     return {
-                        color: "#2563eb",
-                        weight: 2,
-                        opacity: 0.85,
-                        fillColor: "#60a5fa",
-                        fillOpacity: 0.35
+                        color: isPoly ? "#1d4ed8" : "#2563eb",
+                        weight: isPoly ? 2.5 : 2,
+                        opacity: 0.9,
+                        fillColor: isPoly ? "#3b82f6" : "#60a5fa",
+                        fillOpacity: isPoly ? 0.45 : 0.65
                     };
                 },
                 onEachFeature: function (feature, layer) {
+                    layer.featureData = feature;
+                    window.allMapLayers.push(layer);
+
+                    // 1. Popup generation
                     if (feature.properties) {
-                        let popupHtml = `<div class="fw-bold mb-1 text-primary"><i class="bi bi-geo-alt me-1"></i>Feature Details</div><table class="popup-table">`;
+                        const props = feature.properties;
+                        const titleName = props.HAB_NAME || props.Name || props.name || props.Title || props.id || props.Id || "Feature Details";
+                        let popupHtml = `<div class="fw-bold mb-2 text-primary d-flex align-items-center gap-1"><i class="bi bi-geo-alt-fill"></i> ${titleName}</div><table class="popup-table">`;
                         let count = 0;
-                        for (let key in feature.properties) {
-                            if (count < 10) { // Limit popup properties for speed
-                                popupHtml += `<tr><td class="prop-key">${key}</td><td>${feature.properties[key]}</td></tr>`;
+                        for (let key in props) {
+                            if (count < 10) {
+                                popupHtml += `<tr><td class="prop-key">${key}</td><td>${props[key]}</td></tr>`;
                             }
                             count++;
                         }
@@ -679,8 +700,47 @@ function renderMap(rawGeoJson) {
                             popupHtml += `<tr><td colspan="2" class="text-muted small">... and ${count - 10} more attributes</td></tr>`;
                         }
                         popupHtml += `</table>`;
+                        popupHtml += `<button type="button" class="btn btn-sm btn-primary w-100 mt-2 d-flex align-items-center justify-content-center gap-1" onclick="filterTableBySearch('${String(titleName).replace(/'/g, "\\'")}')"><i class="bi bi-table"></i> Search & View in Grid</button>`;
                         layer.bindPopup(popupHtml);
                     }
+
+                    // 2. Interactive Polygon / Marker Hover & Click Events
+                    layer.on('mouseover', function () {
+                        if (layer.setStyle && layer !== currentHighlightedLayer) {
+                            layer.setStyle({
+                                weight: 3.5,
+                                color: "#f59e0b",
+                                fillColor: "#fbbf24",
+                                fillOpacity: 0.75
+                            });
+                        }
+                    });
+
+                    layer.on('mouseout', function () {
+                        if (geoJsonLayer && layer !== currentHighlightedLayer) {
+                            geoJsonLayer.resetStyle(layer);
+                        }
+                    });
+
+                    layer.on('click', function () {
+                        if (currentHighlightedLayer && geoJsonLayer && currentHighlightedLayer.setStyle) {
+                            geoJsonLayer.resetStyle(currentHighlightedLayer);
+                        }
+                        currentHighlightedLayer = layer;
+                        if (layer.setStyle) {
+                            layer.setStyle({
+                                weight: 4,
+                                color: "#ef4444",
+                                fillColor: "#f87171",
+                                fillOpacity: 0.8
+                            });
+                        }
+                        if (layer.getBounds) {
+                            map.fitBounds(layer.getBounds(), { maxZoom: 16, padding: [40, 40] });
+                        } else if (layer.getLatLng) {
+                            map.setView(layer.getLatLng(), Math.max(map.getZoom(), 14));
+                        }
+                    });
                 }
             }).addTo(map);
 
@@ -707,8 +767,109 @@ function renderMap(rawGeoJson) {
     });
 }
 
+/**
+ * Searches and zooms to matching features or polygons on the Leaflet Map.
+ */
+function searchFeaturesOnMap(term) {
+    if (!map || !window.allMapLayers) return;
+    const query = (term || '').toLowerCase().trim();
+    const countBadge = document.getElementById('mapSearchCount');
+
+    if (!query) {
+        if (countBadge) countBadge.classList.add('d-none');
+        if (currentHighlightedLayer && geoJsonLayer) {
+            geoJsonLayer.resetStyle(currentHighlightedLayer);
+            currentHighlightedLayer = null;
+        }
+        return;
+    }
+
+    let matchCount = 0;
+    let firstMatchedLayer = null;
+
+    for (let layer of window.allMapLayers) {
+        const props = layer.featureData?.properties || {};
+        let isMatch = false;
+
+        for (let key in props) {
+            const val = props[key];
+            if (val !== null && val !== undefined && String(val).toLowerCase().includes(query)) {
+                isMatch = true;
+                break;
+            }
+        }
+
+        if (isMatch) {
+            matchCount++;
+            if (!firstMatchedLayer) firstMatchedLayer = layer;
+        }
+    }
+
+    if (countBadge) {
+        countBadge.textContent = `${matchCount} found`;
+        countBadge.className = matchCount > 0 
+            ? "badge bg-success-subtle text-success border border-success-subtle" 
+            : "badge bg-warning-subtle text-warning border border-warning-subtle";
+        countBadge.classList.remove('d-none');
+    }
+
+    if (firstMatchedLayer) {
+        if (currentHighlightedLayer && geoJsonLayer && currentHighlightedLayer.setStyle) {
+            geoJsonLayer.resetStyle(currentHighlightedLayer);
+        }
+        currentHighlightedLayer = firstMatchedLayer;
+        if (firstMatchedLayer.setStyle) {
+            firstMatchedLayer.setStyle({
+                weight: 4,
+                color: "#ef4444",
+                fillColor: "#f87171",
+                fillOpacity: 0.8
+            });
+        }
+        if (firstMatchedLayer.getBounds) {
+            map.fitBounds(firstMatchedLayer.getBounds(), { maxZoom: 16, padding: [40, 40] });
+        } else if (firstMatchedLayer.getLatLng) {
+            map.setView(firstMatchedLayer.getLatLng(), 15);
+        }
+        firstMatchedLayer.openPopup();
+    }
+}
+
+/**
+ * Switches from Map popup directly to Tabular Grid and filters by the selected polygon/feature name.
+ */
+function filterTableBySearch(searchTerm) {
+    const tableTab = document.getElementById('table-tab');
+    const tableSearchInput = document.getElementById('tableSearchInput');
+    if (tableTab) tableTab.click();
+    if (tableSearchInput) {
+        tableSearchInput.value = searchTerm;
+        tableSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        tableSearchInput.focus();
+    }
+}
+
+/**
+ * Focuses on a specific record's Polygon/Point on the Leaflet Map when clicked from the Tabular Grid.
+ */
+function focusFeatureOnMap(featureId, queryTerm) {
+    const mapTab = document.getElementById('map-tab');
+    if (mapTab) mapTab.click();
+
+    setTimeout(() => {
+        if (map) map.invalidateSize();
+        if (queryTerm) {
+            const mapSearchInput = document.getElementById('mapSearchInput');
+            if (mapSearchInput) {
+                mapSearchInput.value = queryTerm;
+            }
+            searchFeaturesOnMap(queryTerm);
+        }
+    }, 200);
+}
+
 // =========================================================================
-// 6. WINDOWED / PAGINATED TABULAR GRID (Memory Efficient)
+// 6. WINDOWED / PAGINATED TABULAR GRID (With Map Action Link)
 // =========================================================================
 
 let renderedRowCount = 50;
@@ -731,9 +892,16 @@ function renderDynamicTable(columns, rows) {
     if (tableBadgeCount) tableBadgeCount.textContent = allTableRows.length.toLocaleString();
     if (!thead) return;
 
-    // 1. Build Header Row
+    // 1. Build Header Row with Map Action Column
     thead.innerHTML = '';
     const headerTr = document.createElement('tr');
+    
+    // Action column for Map Locate
+    const thAction = document.createElement('th');
+    thAction.style.width = '70px';
+    thAction.textContent = 'Locate';
+    headerTr.appendChild(thAction);
+
     currentColumns.forEach(col => {
         const th = document.createElement('th');
         th.textContent = col;
@@ -746,7 +914,6 @@ function renderDynamicTable(columns, rows) {
     const pageSizeSelect = document.getElementById('pageSizeSelect');
 
     if (searchInput) {
-        searchInput.value = '';
         searchInput.oninput = debounce(function () {
             const term = this.value.toLowerCase().trim();
             if (!term) {
@@ -839,6 +1006,13 @@ function appendTableRowBatch(start, end) {
         const tr = document.createElement('tr');
         tr.setAttribute('data-index', i);
 
+        // 1. Add Locate on Map button
+        const tdAction = document.createElement('td');
+        const searchTerm = row.HAB_NAME || row.Name || row.name || row.Id || row.id || '';
+        tdAction.innerHTML = `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" title="Locate & zoom on Map" onclick="focusFeatureOnMap(${i}, '${String(searchTerm).replace(/'/g, "\\'")}')"><i class="bi bi-geo-alt-fill"></i></button>`;
+        tr.appendChild(tdAction);
+
+        // 2. Add columns
         currentColumns.forEach(col => {
             const td = document.createElement('td');
             const val = row[col];
