@@ -6,12 +6,11 @@
  *  2. Fast Client-side JSON inspection (Safe memory preview)
  *  3. AJAX / Fetch API Upload handler (Live % and speed)
  *  4. AJAX / Fetch API Export handler (Binary Blob download)
- *  5. WGS84 Geodesic Calculation Engine (Polygon Area, Perimeter, Centroid, BBox)
- *  6. Universal Spatial Coordinate Parser (GeoJSON, ArcGIS rings/paths/x/y, WKT, Lat/Long strings/numbers, nested locations)
+ *  5. WGS84 Geodesic Calculation Engine (Polygon Area, Perimeter, Polyline Length, Centroid, BBox)
+ *  6. Universal Spatial Coordinate Parser (ArcGIS paths/rings/x/y, GeoJSON, WKT, Lat/Long columns)
  *  7. Executive Analytics & Statistics Aggregator (Numeric columns sum/avg/min/max)
  *  8. Leaflet.js GIS Map Studio (Satellite/Dark/Light basemaps, Floating HUD, Live Search)
  *  9. Windowed HTML Tabular Grid (In-memory search filtering & Paginated DOM)
- * 10. Auto-tab switcher for non-spatial vs spatial datasets
  * =========================================================================
  */
 
@@ -34,9 +33,6 @@ const EARTH_RADIUS_METERS = 6378137;
 // 1. UTILITY FUNCTIONS
 // =========================================================================
 
-/**
- * Formats bytes into human-readable string (e.g. "1.45 MB")
- */
 function formatBytes(bytes, decimals = 2) {
     if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -46,9 +42,6 @@ function formatBytes(bytes, decimals = 2) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
-/**
- * Displays status feedback alerts in the UI.
- */
 function showClientAlert(message, type = 'warning') {
     const alert = document.getElementById('clientAlert');
     const alertMsg = document.getElementById('clientAlertMessage');
@@ -65,17 +58,11 @@ function showClientAlert(message, type = 'warning') {
     }
 }
 
-/**
- * Hides status feedback alert.
- */
 function hideClientAlert() {
     const alert = document.getElementById('clientAlert');
     if (alert) alert.classList.add('d-none');
 }
 
-/**
- * Copies text content of an element to clipboard with user feedback.
- */
 function copyContent(elementId) {
     const el = document.getElementById(elementId);
     if (el) {
@@ -87,9 +74,6 @@ function copyContent(elementId) {
     }
 }
 
-/**
- * Loads built-in sample GeoJSON file directly into the upload input for instant testing.
- */
 function loadSampleData() {
     showClientAlert("Loading sample GIS dataset...", "info");
     fetch('/sample_data.geojson')
@@ -111,7 +95,6 @@ function loadSampleData() {
                 fileInput.dispatchEvent(changeEvent);
             }
             
-            // Auto submit to process instantly
             const uploadForm = document.getElementById('uploadForm');
             if (uploadForm) {
                 uploadForm.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -122,9 +105,6 @@ function loadSampleData() {
         });
 }
 
-/**
- * Debounce helper for smooth search input filtering
- */
 function debounce(func, wait) {
     let timeout;
     return function (...args) {
@@ -137,9 +117,6 @@ function debounce(func, wait) {
 // 2. UNIVERSAL SPATIAL PARSER & WGS84 GEODESIC CALCULATION ENGINE
 // =========================================================================
 
-/**
- * Parses WKT (Well-Known Text) string into GeoJSON geometry object (Point, Polygon, LineString).
- */
 function parseWktGeometry(wkt) {
     if (!wkt || typeof wkt !== 'string') return null;
     const str = wkt.trim();
@@ -149,9 +126,7 @@ function parseWktGeometry(wkt) {
     if (pointMatch) {
         const x = parseFloat(pointMatch[1]);
         const y = parseFloat(pointMatch[2]);
-        if (!isNaN(x) && !isNaN(y)) {
-            return { type: "Point", coordinates: [x, y] };
-        }
+        if (!isNaN(x) && !isNaN(y)) return { type: "Point", coordinates: [x, y] };
     }
 
     // POLYGON (((86.55 25.25, 86.56 25.26, ...)))
@@ -195,25 +170,24 @@ function parseWktGeometry(wkt) {
 }
 
 /**
- * Universal extractor for row geometry from ANY possible field format or name.
+ * Universal extractor for row geometry supporting ESRI ArcGIS paths, rings, x/y, GeoJSON, WKT, and Lat/Long.
  */
 function extractRowGeometry(row) {
     let geomType = row.Geometry_Type || row.GeometryType || "Point";
-    let coords = null;
 
-    // 1. Scan for Geometry fields (case-insensitive)
+    // 1. Scan for Geometry properties
     for (let key in row) {
         const lowerKey = key.toLowerCase();
         const val = row[key];
         if (val === null || val === undefined || val === '') continue;
 
-        // A. WKT formatted strings (e.g. "POINT(...)", "POLYGON(...)")
+        // WKT
         if (typeof val === 'string' && (val.startsWith('POINT') || val.startsWith('POLYGON') || val.startsWith('LINESTRING') || val.startsWith('MULTIPOLYGON'))) {
             const wktObj = parseWktGeometry(val);
             if (wktObj) return wktObj;
         }
 
-        // B. Embedded JSON geometries (ArcGIS rings, paths, or GeoJSON)
+        // Embedded JSON geometries (ArcGIS rings, paths, or GeoJSON)
         if (lowerKey === 'geometry' || lowerKey === 'geometryjson' || lowerKey === 'geom' || 
             lowerKey === 'the_geom' || lowerKey === 'geojson' || lowerKey === 'shape' || lowerKey === 'geom_json') {
             try {
@@ -224,7 +198,11 @@ function extractRowGeometry(row) {
                     } else if (gJson.rings && Array.isArray(gJson.rings)) {
                         return { type: "Polygon", coordinates: gJson.rings };
                     } else if (gJson.paths && Array.isArray(gJson.paths)) {
-                        return { type: "LineString", coordinates: gJson.paths.length === 1 ? gJson.paths[0] : gJson.paths };
+                        if (gJson.paths.length === 1 && Array.isArray(gJson.paths[0])) {
+                            return { type: "LineString", coordinates: gJson.paths[0] };
+                        } else {
+                            return { type: "MultiLineString", coordinates: gJson.paths };
+                        }
                     } else if (gJson.x !== undefined && gJson.y !== undefined) {
                         return { type: "Point", coordinates: [parseFloat(gJson.x), parseFloat(gJson.y)] };
                     }
@@ -232,7 +210,6 @@ function extractRowGeometry(row) {
             } catch (e) { }
         }
 
-        // C. Direct rings or paths field
         if (lowerKey === 'rings' && (Array.isArray(val) || typeof val === 'string')) {
             try {
                 const r = typeof val === 'string' ? JSON.parse(val) : val;
@@ -243,11 +220,16 @@ function extractRowGeometry(row) {
         if (lowerKey === 'paths' && (Array.isArray(val) || typeof val === 'string')) {
             try {
                 const p = typeof val === 'string' ? JSON.parse(val) : val;
-                if (Array.isArray(p)) return { type: "LineString", coordinates: p.length === 1 ? p[0] : p };
+                if (Array.isArray(p)) {
+                    if (p.length === 1 && Array.isArray(p[0])) {
+                        return { type: "LineString", coordinates: p[0] };
+                    } else {
+                        return { type: "MultiLineString", coordinates: p };
+                    }
+                }
             } catch (e) { }
         }
 
-        // D. Coordinates array
         if ((lowerKey === 'coordinates' || lowerKey === 'coords' || lowerKey === 'coord') && (Array.isArray(val) || typeof val === 'string')) {
             try {
                 const c = typeof val === 'string' ? JSON.parse(val) : val;
@@ -258,16 +240,13 @@ function extractRowGeometry(row) {
             } catch (e) { }
         }
 
-        // E. Nested location object: { lat, lng } or { latitude, longitude }
         if ((lowerKey === 'location' || lowerKey === 'position' || lowerKey === 'geo') && typeof val === 'object' && val !== null) {
             const lat = val.lat || val.latitude || val.y;
             const lon = val.lon || val.lng || val.longitude || val.x;
             if (lat !== undefined && lon !== undefined) {
                 const latNum = parseFloat(lat);
                 const lonNum = parseFloat(lon);
-                if (!isNaN(latNum) && !isNaN(lonNum)) {
-                    return { type: "Point", coordinates: [lonNum, latNum] };
-                }
+                if (!isNaN(latNum) && !isNaN(lonNum)) return { type: "Point", coordinates: [lonNum, latNum] };
             }
         }
     }
@@ -295,9 +274,6 @@ function extractRowGeometry(row) {
     return null;
 }
 
-/**
- * Calculates Haversine distance between two coordinates in meters.
- */
 function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -308,9 +284,6 @@ function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
     return EARTH_RADIUS_METERS * c;
 }
 
-/**
- * Calculates geodesic area of a single polygon ring in square meters using spherical excess.
- */
 function calculateRingArea(ring) {
     if (!ring || ring.length < 3) return 0;
     let total = 0;
@@ -333,9 +306,6 @@ function calculateRingArea(ring) {
     return area;
 }
 
-/**
- * Calculates polygon perimeter in meters.
- */
 function calculateRingPerimeter(ring) {
     if (!ring || ring.length < 2) return 0;
     let perimeter = 0;
@@ -354,9 +324,19 @@ function calculateRingPerimeter(ring) {
     return perimeter;
 }
 
-/**
- * Calculates geometry spatial metrics: Area (m²), Perimeter (m), Centroid [Lat, Lon], Vertex Count, Bounding Box.
- */
+function calculateLineLength(points) {
+    if (!points || points.length < 2) return 0;
+    let length = 0;
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        if (p1 && p2 && p1.length >= 2 && p2.length >= 2) {
+            length += calculateHaversineDistance(parseFloat(p1[1]), parseFloat(p1[0]), parseFloat(p2[1]), parseFloat(p2[0]));
+        }
+    }
+    return length;
+}
+
 function calculateSpatialMetrics(geometry) {
     const result = {
         areaM2: 0,
@@ -401,8 +381,17 @@ function calculateSpatialMetrics(geometry) {
         }
     } else if (type === 'linestring') {
         if (Array.isArray(coords)) {
-            result.perimeterM = calculateRingPerimeter(coords);
+            result.perimeterM = calculateLineLength(coords);
             allPoints = coords;
+        }
+    } else if (type === 'multilinestring') {
+        if (Array.isArray(coords)) {
+            for (let line of coords) {
+                if (Array.isArray(line)) {
+                    result.perimeterM += calculateLineLength(line);
+                    allPoints = allPoints.concat(line);
+                }
+            }
         }
     } else if (type === 'point') {
         if (Array.isArray(coords) && coords.length >= 2) {
@@ -787,23 +776,19 @@ function displayResults(data) {
     if (data.datasetId) window.uploadedDatasetId = data.datasetId;
     if (data.rawJson) window.uploadedRawJson = data.rawJson;
 
-    // 1. Reveal results container
     const resultsSection = document.getElementById('resultsSection');
     if (resultsSection) resultsSection.classList.remove('d-none');
 
-    // 2. Set export parameters
     const exportDatasetId = document.getElementById('exportDatasetId');
     if (exportDatasetId) exportDatasetId.value = data.datasetId || '';
     const exportFileName = document.getElementById('exportFileName');
     if (exportFileName) exportFileName.value = data.fileName || 'GeoData';
 
-    // 3. Update raw JSON view
     const serverRawJson = document.getElementById('serverRawJson');
     if (serverRawJson) {
         serverRawJson.textContent = data.jsonPreview || data.rawJson || '';
     }
 
-    // 4. Build GeoJSON Features Collection & Run Geodesic Spatial Calculations
     let rawObj = null;
 
     if (data.rawJson) {
@@ -828,7 +813,6 @@ function displayResults(data) {
         if (geomObj && geomObj.coordinates) {
             spatialMetrics = calculateSpatialMetrics(geomObj);
 
-            // Inject calculated spatial fields into the row for data grid viewing & searching!
             row["Calculated_Area_Km2"] = spatialMetrics.areaKm2 > 0 ? spatialMetrics.areaKm2.toFixed(4) : "-";
             row["Perimeter_Km"] = spatialMetrics.perimeterKm > 0 ? spatialMetrics.perimeterKm.toFixed(3) : "-";
             row["Centroid"] = spatialMetrics.centroid ? `${spatialMetrics.centroid[0].toFixed(4)}, ${spatialMetrics.centroid[1].toFixed(4)}` : "-";
@@ -871,7 +855,7 @@ function displayResults(data) {
     // 8. Render Dynamic Tabular Grid
     renderDynamicTable(columns, rows);
 
-    // 9. If dataset is non-spatial (0 features with geometry), auto-switch to Tabular Grid tab
+    // 9. If dataset is non-spatial, auto-switch to Tabular Grid tab
     if (calculatedFeatures.length === 0 && rows.length > 0) {
         const tableTabBtn = document.getElementById('table-tab');
         if (tableTabBtn) {
@@ -885,13 +869,12 @@ function displayResults(data) {
     resultsSection?.scrollIntoView({ behavior: 'smooth' });
 }
 
-/**
- * Computes and populates dataset-wide KPI cards, Spatial Extent, Largest Polygons, and Numeric Column Summaries.
- */
 function updateDatasetAnalyticsAndKPIs(data, features) {
     let totalAreaKm2 = 0;
     let totalPerimeterKm = 0;
     let polygonCount = 0;
+    let lineCount = 0;
+    let pointCount = 0;
     let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
     let sumCentroidLat = 0, sumCentroidLon = 0, validCentroidCount = 0;
 
@@ -899,13 +882,17 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
 
     for (let feat of features) {
         const m = feat.metrics;
+        const gType = (feat.geometry?.type || '').toLowerCase();
+        if (gType.includes('polygon')) polygonCount++;
+        else if (gType.includes('line')) lineCount++;
+        else if (gType.includes('point')) pointCount++;
+
         if (m) {
             if (m.areaKm2 > 0) {
                 totalAreaKm2 += m.areaKm2;
-                polygonCount++;
                 polygonsList.push({
                     feature: feat,
-                    name: feat.properties.V_NAME || feat.properties.HAB_NAME || feat.properties.GPNAME_1 || feat.properties.Name || feat.properties.name || `Feature #${feat.rowIndex + 1}`,
+                    name: feat.properties.NAME || feat.properties.V_NAME || feat.properties.HAB_NAME || feat.properties.GPNAME_1 || feat.properties.Name || feat.properties.name || `Feature #${feat.rowIndex + 1}`,
                     areaKm2: m.areaKm2,
                     areaHa: m.areaHectares,
                     perimeterKm: m.perimeterKm,
@@ -930,7 +917,7 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
         }
     }
 
-    // 1. Populate Executive KPI Cards
+    // Populate KPI Cards
     const totalRecords = data.totalRecords ?? data.rows?.length ?? features.length;
     document.getElementById('kpiTotalRecords').textContent = totalRecords.toLocaleString();
     document.getElementById('kpiFileName').textContent = data.fileName || 'Data';
@@ -944,7 +931,7 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
     document.getElementById('kpiPerimeterM').textContent = `${Math.round(totalPerimeterKm * 1000).toLocaleString()} meters`;
     
     const avgArea = polygonCount > 0 ? (totalAreaKm2 / polygonCount).toFixed(3) : "0.00";
-    document.getElementById('kpiAvgArea').textContent = `Avg: ${avgArea} km²`;
+    document.getElementById('kpiAvgArea').textContent = lineCount > 0 ? `${lineCount} Lines / Canals` : `Avg: ${avgArea} km²`;
 
     if (validCentroidCount > 0) {
         const centerLat = (sumCentroidLat / validCentroidCount).toFixed(4);
@@ -958,14 +945,18 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
         document.getElementById('kpiCentroid').textContent = '-- , --';
     }
 
-    document.getElementById('kpiGeometrySummary').textContent = data.geometrySummary || (polygonCount > 0 ? `${polygonCount} Polygons Calculated` : (features.length > 0 ? `${features.length} Features Plotted` : 'Non-spatial Tabular JSON'));
+    let summaryText = "";
+    if (polygonCount > 0) summaryText += `${polygonCount} Polygons `;
+    if (lineCount > 0) summaryText += `${lineCount} Lines `;
+    if (pointCount > 0) summaryText += `${pointCount} Points `;
+    document.getElementById('kpiGeometrySummary').textContent = summaryText || data.geometrySummary || 'Spatial Features';
 
-    // 2. Populate Top Polygons by Calculated Area Table
+    // Top Polygons
     polygonsList.sort((a, b) => b.areaKm2 - a.areaKm2);
     const topPolygonsBody = document.getElementById('topPolygonsBody');
     if (topPolygonsBody) {
         if (polygonsList.length === 0) {
-            topPolygonsBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">No polygon features with calculateable area found.</td></tr>`;
+            topPolygonsBody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">${lineCount > 0 ? 'Line features plotted (lengths shown in grid & on map)' : 'No polygon features with area found.'}</td></tr>`;
         } else {
             topPolygonsBody.innerHTML = '';
             const top5 = polygonsList.slice(0, 10);
@@ -991,7 +982,7 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
         }
     }
 
-    // 3. Scan & Calculate Numeric Attribute Statistics (Sum, Avg, Max)
+    // Numeric Stats
     const numericStatsBody = document.getElementById('numericStatsBody');
     if (numericStatsBody && data.rows && data.rows.length > 0) {
         const rows = data.rows;
@@ -1049,7 +1040,7 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
 }
 
 // =========================================================================
-// 6. LEAFLET.JS GIS MAP STUDIO (With Satellite, Dark, Light & Floating HUD)
+// 6. LEAFLET.JS GIS MAP STUDIO
 // =========================================================================
 
 function renderMap(rawGeoJson, calculatedFeatures = []) {
@@ -1072,7 +1063,7 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
         }).addTo(map);
 
         const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri',
             maxZoom: 19
         });
 
@@ -1090,7 +1081,7 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
 
         const topoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
-            attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
+            attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM'
         });
 
         L.control.layers({
@@ -1140,13 +1131,15 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                     });
                 },
                 style: function (feature) {
-                    const isPoly = feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon');
+                    const gType = (feature.geometry?.type || '').toLowerCase();
+                    const isPoly = gType === 'polygon' || gType === 'multipolygon';
+                    const isLine = gType === 'linestring' || gType === 'multilinestring';
                     return {
-                        color: isPoly ? "#2563eb" : "#3b82f6",
-                        weight: isPoly ? 2.5 : 2,
-                        opacity: 0.9,
+                        color: isPoly ? "#2563eb" : (isLine ? "#0284c7" : "#3b82f6"),
+                        weight: isPoly ? 2.5 : (isLine ? 4 : 2),
+                        opacity: isLine ? 1 : 0.9,
                         fillColor: isPoly ? "#60a5fa" : "#93c5fd",
-                        fillOpacity: isPoly ? 0.45 : 0.65
+                        fillOpacity: isPoly ? 0.45 : (isLine ? 0 : 0.65)
                     };
                 },
                 onEachFeature: function (feature, layer) {
@@ -1155,7 +1148,7 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
 
                     const metrics = feature.metrics || calculateSpatialMetrics(feature.geometry);
                     const props = feature.properties || {};
-                    const titleName = props.V_NAME || props.HAB_NAME || props.GPNAME_1 || props.Name || props.name || props.Title || props.id || props.Id || "Feature Details";
+                    const titleName = props.NAME || props.V_NAME || props.HAB_NAME || props.GPNAME_1 || props.Name || props.name || props.Title || props.id || props.Id || "Feature Details";
 
                     let popupHtml = `
                         <div class="popup-pro-header">
@@ -1165,12 +1158,13 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                             <span class="badge bg-primary-subtle text-primary">${feature.geometry?.type || 'Feature'}</span>
                         </div>
                         <div class="popup-pro-body">
-                            ${metrics.areaKm2 > 0 ? `
                             <div class="popup-calc-chips">
+                                ${metrics.areaKm2 > 0 ? `
                                 <span class="popup-chip"><i class="bi bi-bounding-box-circles me-1"></i>${metrics.areaKm2.toFixed(3)} km²</span>
                                 <span class="popup-chip"><i class="bi bi-bezier2 me-1"></i>${metrics.perimeterKm.toFixed(2)} km</span>
-                                <span class="popup-chip">${metrics.areaHectares.toFixed(1)} ha</span>
-                            </div>` : ''}
+                                <span class="popup-chip">${metrics.areaHectares.toFixed(1)} ha</span>` : 
+                                (metrics.perimeterKm > 0 ? `<span class="popup-chip"><i class="bi bi-bezier2 me-1"></i>Length: ${metrics.perimeterKm.toFixed(3)} km</span><span class="popup-chip">${Math.round(metrics.perimeterM).toLocaleString()} m</span>` : '')}
+                            </div>
                             <table class="popup-pro-table">`;
 
                     let count = 0;
@@ -1199,7 +1193,7 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                             floatingHud.classList.remove('d-none');
                             document.getElementById('hudFeatureName').textContent = titleName;
                             document.getElementById('hudAreaKm').textContent = metrics.areaKm2 > 0 ? metrics.areaKm2.toFixed(4) : "0.00";
-                            document.getElementById('hudAreaHa').textContent = metrics.areaKm2 > 0 ? `${metrics.areaHectares.toFixed(2)} ha (${metrics.areaAcres.toFixed(1)} acres)` : "-";
+                            document.getElementById('hudAreaHa').textContent = metrics.areaKm2 > 0 ? `${metrics.areaHectares.toFixed(2)} ha (${metrics.areaAcres.toFixed(1)} acres)` : (metrics.perimeterKm > 0 ? `${metrics.perimeterKm.toFixed(3)} km line` : "-");
                             document.getElementById('hudPerimeterKm').textContent = metrics.perimeterKm > 0 ? metrics.perimeterKm.toFixed(3) : "0.00";
                             document.getElementById('hudPerimeterM').textContent = metrics.perimeterM > 0 ? `${Math.round(metrics.perimeterM).toLocaleString()} meters` : "-";
                             document.getElementById('hudVertexCount').textContent = metrics.vertexCount.toLocaleString();
@@ -1209,7 +1203,7 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
 
                         if (layer.setStyle && layer !== currentHighlightedLayer) {
                             layer.setStyle({
-                                weight: 3.5,
+                                weight: 4.5,
                                 color: "#f59e0b",
                                 fillColor: "#fbbf24",
                                 fillOpacity: 0.75
@@ -1230,7 +1224,7 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
                         currentHighlightedLayer = layer;
                         if (layer.setStyle) {
                             layer.setStyle({
-                                weight: 4,
+                                weight: 5,
                                 color: "#ef4444",
                                 fillColor: "#f87171",
                                 fillOpacity: 0.85
@@ -1267,9 +1261,6 @@ function renderMap(rawGeoJson, calculatedFeatures = []) {
     });
 }
 
-/**
- * Searches and zooms to matching features or polygons on the Leaflet Map.
- */
 function searchFeaturesOnMap(term) {
     if (!map || !window.allMapLayers) return;
     const query = (term || '').toLowerCase().trim();
@@ -1320,7 +1311,7 @@ function searchFeaturesOnMap(term) {
         currentHighlightedLayer = firstMatchedLayer;
         if (firstMatchedLayer.setStyle) {
             firstMatchedLayer.setStyle({
-                weight: 4,
+                weight: 5,
                 color: "#ef4444",
                 fillColor: "#f87171",
                 fillOpacity: 0.85
@@ -1335,9 +1326,6 @@ function searchFeaturesOnMap(term) {
     }
 }
 
-/**
- * Switches from Map popup directly to Tabular Grid and filters by the selected polygon/feature name.
- */
 function filterTableBySearch(searchTerm) {
     const tableTab = document.getElementById('table-tab');
     const tableSearchInput = document.getElementById('tableSearchInput');
@@ -1349,9 +1337,6 @@ function filterTableBySearch(searchTerm) {
     }
 }
 
-/**
- * Focuses on a specific record's Polygon/Point on the Leaflet Map when clicked from the Tabular Grid or Rankings table.
- */
 function focusFeatureOnMap(rowIndex, queryTerm) {
     const mapTab = document.getElementById('map-tab');
     if (mapTab) mapTab.click();
@@ -1392,7 +1377,6 @@ function renderDynamicTable(columns, rows) {
     thead.innerHTML = '';
     const headerTr = document.createElement('tr');
     
-    // Locate button column
     const thAction = document.createElement('th');
     thAction.style.width = '70px';
     thAction.textContent = 'Locate';
@@ -1479,13 +1463,11 @@ function appendTableRowBatch(start, end) {
         const tr = document.createElement('tr');
         tr.setAttribute('data-index', i);
 
-        // 1. Locate on Map button
         const tdAction = document.createElement('td');
-        const searchTerm = row.V_NAME || row.HAB_NAME || row.Name || row.name || row.Id || row.id || '';
+        const searchTerm = row.NAME || row.V_NAME || row.HAB_NAME || row.Name || row.name || row.Id || row.id || '';
         tdAction.innerHTML = `<button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 rounded-pill" title="Locate & zoom on Map" onclick="focusFeatureOnMap(${i}, '${String(searchTerm).replace(/'/g, "\\'")}')"><i class="bi bi-geo-alt-fill"></i></button>`;
         tr.appendChild(tdAction);
 
-        // 2. Dynamic column cells
         currentColumns.forEach(col => {
             const td = document.createElement('td');
             const val = row[col];

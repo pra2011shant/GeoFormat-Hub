@@ -382,10 +382,20 @@ namespace GeoFormat_Hub.Services
                                 // C. ESRI ArcGIS Polyline format: { paths: [[[x, y], ...]] }
                                 else if (gRoot.TryGetProperty("paths", out var paths) && paths.ValueKind == JsonValueKind.Array)
                                 {
-                                    row["Geometry_Type"] = "LineString";
-                                    row["Coordinates"] = paths.GetRawText();
+                                    var pathArray = paths.EnumerateArray().ToList();
+                                    if (pathArray.Count == 1)
+                                    {
+                                        row["Geometry_Type"] = "LineString";
+                                        row["Coordinates"] = pathArray[0].GetRawText();
+                                        detectedGeomType = "LineString";
+                                    }
+                                    else
+                                    {
+                                        row["Geometry_Type"] = "MultiLineString";
+                                        row["Coordinates"] = paths.GetRawText();
+                                        detectedGeomType = "MultiLineString";
+                                    }
                                     coordinatesDetected = true;
-                                    detectedGeomType = "LineString";
                                 }
                                 // D. ESRI ArcGIS Point format: { x: ..., y: ... }
                                 else if (gRoot.TryGetProperty("x", out var gx) && gRoot.TryGetProperty("y", out var gy))
