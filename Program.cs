@@ -37,8 +37,15 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+var contentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".geojson"] = "application/geo+json";
+contentTypeProvider.Mappings[".json"] = "application/json";
+
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypeProvider
+});
 
 app.UseRouting();
 
