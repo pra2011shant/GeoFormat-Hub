@@ -1,16 +1,14 @@
 /**
  * GeoFormat Hub - Frontend JavaScript Controller & Geodesic Calculation Engine
  * =========================================================================
- * Modules included:
- *  1. File Upload Dropzone & Client-side format/size validation
- *  2. Fast Client-side JSON inspection (Safe memory preview)
- *  3. AJAX / Fetch API Upload handler (Live % and speed)
- *  4. AJAX / Fetch API Export handler (Binary Blob download)
- *  5. WGS84 Geodesic Calculation Engine (Polygon Area, Perimeter, Polyline Length, Centroid, BBox)
- *  6. Universal Spatial Coordinate Parser (ArcGIS paths/rings/x/y, GeoJSON, WKT, Lat/Long columns)
- *  7. Executive Analytics & Statistics Aggregator (Numeric columns sum/avg/min/max)
- *  8. Leaflet.js GIS Map Studio (Satellite/Dark/Light basemaps, Floating HUD, Live Search)
- *  9. Windowed HTML Tabular Grid (In-memory search filtering & Paginated DOM)
+ * Universal Auto-Detect Spatial Geometry Engine
+ * Automatically recognizes and plots ANY Polygon, Line, or Point from ANY JSON format:
+ *  - ESRI ArcGIS JSON (rings, paths, x/y, spatialReference)
+ *  - Standard GeoJSON (FeatureCollection, Feature, Geometry objects)
+ *  - WKT strings (POINT, POLYGON, MULTIPOLYGON, LINESTRING, MULTILINESTRING)
+ *  - Lat/Long / X/Y columns in any case or nested object
+ *  - Embedded JSON strings or direct objects under any key name
+ *  - Web Mercator EPSG:3857 to WGS84 EPSG:4326 auto-reprojection
  * =========================================================================
  */
 
@@ -117,6 +115,49 @@ function debounce(func, wait) {
 // 2. UNIVERSAL SPATIAL PARSER & WGS84 GEODESIC CALCULATION ENGINE
 // =========================================================================
 
+/**
+ * Normalizes coordinate pair [lon, lat], with auto-detection for Web Mercator EPSG:3857 and lat/lon inversion.
+ */
+function normalizeCoordPair(p) {
+    if (!p || !Array.isArray(p) || p.length < 2) return null;
+    let x = parseFloat(p[0]);
+    let y = parseFloat(p[1]);
+    if (isNaN(x) || isNaN(y)) return null;
+
+    // Web Mercator EPSG:3857 projection check (e.g. coordinates in millions of meters)
+    if (Math.abs(x) > 180 || Math.abs(y) > 90) {
+        if (Math.abs(x) <= 20037508.34 && Math.abs(y) <= 20037508.34) {
+            x = (x / 20037508.34) * 180;
+            y = (y / 20037508.34) * 180;
+            y = (180 / Math.PI) * (2 * Math.atan(Math.exp(y * Math.PI / 180)) - Math.PI / 2);
+        }
+    }
+
+    // Latitude & Longitude swap check (e.g. if x is latitude 8-38 and y is longitude 68-98 for India)
+    if (Math.abs(x) <= 40 && Math.abs(y) >= 60 && Math.abs(y) <= 100) {
+        // Swap [lat, lon] to [lon, lat]
+        const temp = x;
+        x = y;
+        y = temp;
+    }
+
+    return [x, y];
+}
+
+/**
+ * Recursively normalizes array of coordinates.
+ */
+function normalizeCoordsArray(coords) {
+    if (!Array.isArray(coords)) return null;
+    if (coords.length >= 2 && typeof coords[0] !== 'object') {
+        return normalizeCoordPair(coords);
+    }
+    return coords.map(c => normalizeCoordsArray(c)).filter(c => c !== null);
+}
+
+/**
+ * Parses WKT (Well-Known Text) string into GeoJSON geometry object.
+ */
 function parseWktGeometry(wkt) {
     if (!wkt || typeof wkt !== 'string') return null;
     const str = wkt.trim();
@@ -124,9 +165,8 @@ function parseWktGeometry(wkt) {
     // POINT (84.08 24.81)
     const pointMatch = str.match(/POINT\s*\(\s*([-\d.]+)\s+([-\d.]+)\s*\)/i);
     if (pointMatch) {
-        const x = parseFloat(pointMatch[1]);
-        const y = parseFloat(pointMatch[2]);
-        if (!isNaN(x) && !isNaN(y)) return { type: "Point", coordinates: [x, y] };
+        const pair = normalizeCoordPair([parseFloat(pointMatch[1]), parseFloat(pointMatch[2])]);
+        if (pair) return { type: "Point", coordinates: pair };
     }
 
     // POLYGON (((86.55 25.25, 86.56 25.26, ...)))
@@ -140,9 +180,8 @@ function parseWktGeometry(wkt) {
             for (let pair of pairs) {
                 const parts = pair.trim().split(/\s+/);
                 if (parts.length >= 2) {
-                    const x = parseFloat(parts[0]);
-                    const y = parseFloat(parts[1]);
-                    if (!isNaN(x) && !isNaN(y)) points.push([x, y]);
+                    const pt = normalizeCoordPair([parseFloat(parts[0]), parseFloat(parts[1])]);
+                    if (pt) points.push(pt);
                 }
             }
             if (points.length >= 3) rings.push(points);
@@ -158,9 +197,8 @@ function parseWktGeometry(wkt) {
         for (let pair of pairs) {
             const parts = pair.trim().split(/\s+/);
             if (parts.length >= 2) {
-                const x = parseFloat(parts[0]);
-                const y = parseFloat(parts[1]);
-                if (!isNaN(x) && !isNaN(y)) points.push([x, y]);
+                const pt = normalizeCoordPair([parseFloat(parts[0]), parseFloat(parts[1])]);
+                if (pt) points.push(pt);
             }
         }
         if (points.length >= 2) return { type: "LineString", coordinates: points };
@@ -170,83 +208,92 @@ function parseWktGeometry(wkt) {
 }
 
 /**
- * Universal extractor for row geometry supporting ESRI ArcGIS paths, rings, x/y, GeoJSON, WKT, and Lat/Long.
+ * Universal extractor for row geometry supporting ANY field format, nested JSON, ArcGIS, WKT, Lat/Long.
  */
 function extractRowGeometry(row) {
-    let geomType = row.Geometry_Type || row.GeometryType || "Point";
+    if (!row || typeof row !== 'object') return null;
+    let geomType = row.Geometry_Type || row.GeometryType || null;
 
-    // 1. Scan for Geometry properties
+    // 1. Check all keys in the row object
     for (let key in row) {
         const lowerKey = key.toLowerCase();
-        const val = row[key];
+        let val = row[key];
         if (val === null || val === undefined || val === '') continue;
 
-        // WKT
+        // If string starts with '{' or '[', attempt to parse as JSON
+        if (typeof val === 'string') {
+            const trimmed = val.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                try { val = JSON.parse(trimmed); } catch (e) { }
+            }
+        }
+
+        // A. WKT string
         if (typeof val === 'string' && (val.startsWith('POINT') || val.startsWith('POLYGON') || val.startsWith('LINESTRING') || val.startsWith('MULTIPOLYGON'))) {
             const wktObj = parseWktGeometry(val);
             if (wktObj) return wktObj;
         }
 
-        // Embedded JSON geometries (ArcGIS rings, paths, or GeoJSON)
-        if (lowerKey === 'geometry' || lowerKey === 'geometryjson' || lowerKey === 'geom' || 
-            lowerKey === 'the_geom' || lowerKey === 'geojson' || lowerKey === 'shape' || lowerKey === 'geom_json') {
-            try {
-                const gJson = typeof val === 'string' ? JSON.parse(val) : val;
-                if (gJson && typeof gJson === 'object') {
-                    if (gJson.coordinates) {
-                        return { type: gJson.type || geomType, coordinates: gJson.coordinates };
-                    } else if (gJson.rings && Array.isArray(gJson.rings)) {
-                        return { type: "Polygon", coordinates: gJson.rings };
-                    } else if (gJson.paths && Array.isArray(gJson.paths)) {
-                        if (gJson.paths.length === 1 && Array.isArray(gJson.paths[0])) {
-                            return { type: "LineString", coordinates: gJson.paths[0] };
-                        } else {
-                            return { type: "MultiLineString", coordinates: gJson.paths };
-                        }
-                    } else if (gJson.x !== undefined && gJson.y !== undefined) {
-                        return { type: "Point", coordinates: [parseFloat(gJson.x), parseFloat(gJson.y)] };
-                    }
-                }
-            } catch (e) { }
-        }
+        // B. Object with GeoJSON coordinates
+        if (val && typeof val === 'object') {
+            if (val.type && val.coordinates) {
+                const norm = normalizeCoordsArray(val.coordinates);
+                if (norm) return { type: val.type, coordinates: norm };
+            }
 
-        if (lowerKey === 'rings' && (Array.isArray(val) || typeof val === 'string')) {
-            try {
-                const r = typeof val === 'string' ? JSON.parse(val) : val;
-                if (Array.isArray(r)) return { type: "Polygon", coordinates: r };
-            } catch (e) { }
-        }
+            // C. ESRI ArcGIS rings (Polygon)
+            if (val.rings && Array.isArray(val.rings)) {
+                const norm = normalizeCoordsArray(val.rings);
+                if (norm && norm.length > 0) return { type: "Polygon", coordinates: norm };
+            }
 
-        if (lowerKey === 'paths' && (Array.isArray(val) || typeof val === 'string')) {
-            try {
-                const p = typeof val === 'string' ? JSON.parse(val) : val;
-                if (Array.isArray(p)) {
-                    if (p.length === 1 && Array.isArray(p[0])) {
-                        return { type: "LineString", coordinates: p[0] };
+            // D. ESRI ArcGIS paths (LineString / MultiLineString)
+            if (val.paths && Array.isArray(val.paths)) {
+                const norm = normalizeCoordsArray(val.paths);
+                if (norm && norm.length > 0) {
+                    if (norm.length === 1 && Array.isArray(norm[0])) {
+                        return { type: "LineString", coordinates: norm[0] };
                     } else {
-                        return { type: "MultiLineString", coordinates: p };
+                        return { type: "MultiLineString", coordinates: norm };
                     }
                 }
-            } catch (e) { }
+            }
+
+            // E. ESRI ArcGIS Point { x, y }
+            if (val.x !== undefined && val.y !== undefined) {
+                const pair = normalizeCoordPair([val.x, val.y]);
+                if (pair) return { type: "Point", coordinates: pair };
+            }
+
+            // F. Location object { lat, lon } / { latitude, longitude }
+            if ((val.lat !== undefined || val.latitude !== undefined) && (val.lon !== undefined || val.lng !== undefined || val.longitude !== undefined)) {
+                const lat = val.lat !== undefined ? val.lat : (val.latitude !== undefined ? val.latitude : val.y);
+                const lon = val.lon !== undefined ? val.lon : (val.lng !== undefined ? val.lng : (val.longitude !== undefined ? val.longitude : val.x));
+                const pair = normalizeCoordPair([lon, lat]);
+                if (pair) return { type: "Point", coordinates: pair };
+            }
         }
 
-        if ((lowerKey === 'coordinates' || lowerKey === 'coords' || lowerKey === 'coord') && (Array.isArray(val) || typeof val === 'string')) {
-            try {
-                const c = typeof val === 'string' ? JSON.parse(val) : val;
-                if (Array.isArray(c)) {
-                    const guessedType = Array.isArray(c[0]) ? (Array.isArray(c[0][0]) ? "Polygon" : "LineString") : "Point";
-                    return { type: geomType || guessedType, coordinates: c };
-                }
-            } catch (e) { }
+        // G. Direct rings or paths property
+        if (lowerKey === 'rings' && Array.isArray(val)) {
+            const norm = normalizeCoordsArray(val);
+            if (norm && norm.length > 0) return { type: "Polygon", coordinates: norm };
         }
 
-        if ((lowerKey === 'location' || lowerKey === 'position' || lowerKey === 'geo') && typeof val === 'object' && val !== null) {
-            const lat = val.lat || val.latitude || val.y;
-            const lon = val.lon || val.lng || val.longitude || val.x;
-            if (lat !== undefined && lon !== undefined) {
-                const latNum = parseFloat(lat);
-                const lonNum = parseFloat(lon);
-                if (!isNaN(latNum) && !isNaN(lonNum)) return { type: "Point", coordinates: [lonNum, latNum] };
+        if (lowerKey === 'paths' && Array.isArray(val)) {
+            const norm = normalizeCoordsArray(val);
+            if (norm && norm.length > 0) {
+                if (norm.length === 1 && Array.isArray(norm[0])) return { type: "LineString", coordinates: norm[0] };
+                return { type: "MultiLineString", coordinates: norm };
+            }
+        }
+
+        // H. Direct coordinates array property
+        if ((lowerKey === 'coordinates' || lowerKey === 'coords' || lowerKey === 'coord') && Array.isArray(val)) {
+            const norm = normalizeCoordsArray(val);
+            if (norm && norm.length > 0) {
+                const guessedType = Array.isArray(norm[0]) ? (Array.isArray(norm[0][0]) ? "Polygon" : "LineString") : "Point";
+                return { type: geomType || guessedType, coordinates: norm };
             }
         }
     }
@@ -260,15 +307,16 @@ function extractRowGeometry(row) {
 
         if (['latitude', 'lat', 'lat_deg', 'point_y', 'y_coord', 'y', 'lat_dd', 'latitude84'].includes(lowerKey)) {
             const num = parseFloat(val);
-            if (!isNaN(num) && num >= -90 && num <= 90) latVal = num;
+            if (!isNaN(num)) latVal = num;
         } else if (['longitude', 'lon', 'lng', 'long', 'lon_deg', 'point_x', 'x_coord', 'x', 'lon_dd', 'longitude84'].includes(lowerKey)) {
             const num = parseFloat(val);
-            if (!isNaN(num) && num >= -180 && num <= 180) lonVal = num;
+            if (!isNaN(num)) lonVal = num;
         }
     }
 
     if (latVal !== null && lonVal !== null) {
-        return { type: geomType || "Point", coordinates: [lonVal, latVal] };
+        const pair = normalizeCoordPair([lonVal, latVal]);
+        if (pair) return { type: geomType || "Point", coordinates: pair };
     }
 
     return null;
@@ -917,7 +965,6 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
         }
     }
 
-    // Populate KPI Cards
     const totalRecords = data.totalRecords ?? data.rows?.length ?? features.length;
     document.getElementById('kpiTotalRecords').textContent = totalRecords.toLocaleString();
     document.getElementById('kpiFileName').textContent = data.fileName || 'Data';
@@ -951,7 +998,6 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
     if (pointCount > 0) summaryText += `${pointCount} Points `;
     document.getElementById('kpiGeometrySummary').textContent = summaryText || data.geometrySummary || 'Spatial Features';
 
-    // Top Polygons
     polygonsList.sort((a, b) => b.areaKm2 - a.areaKm2);
     const topPolygonsBody = document.getElementById('topPolygonsBody');
     if (topPolygonsBody) {
@@ -982,7 +1028,6 @@ function updateDatasetAnalyticsAndKPIs(data, features) {
         }
     }
 
-    // Numeric Stats
     const numericStatsBody = document.getElementById('numericStatsBody');
     if (numericStatsBody && data.rows && data.rows.length > 0) {
         const rows = data.rows;
