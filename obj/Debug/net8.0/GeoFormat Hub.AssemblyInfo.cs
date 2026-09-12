@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GeoFormat Hub")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7bed3036f233e734abc6e696556b0b7bff52bd38")]
 [assembly: System.Reflection.AssemblyProductAttribute("GeoFormat Hub")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GeoFormat Hub")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

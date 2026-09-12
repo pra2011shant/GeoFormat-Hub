@@ -497,45 +497,82 @@ function displayResults(data) {
         serverRawJson.textContent = data.jsonPreview || data.rawJson || '';
     }
 
-    // 5. Render Leaflet Map (Using GeoJSON structure if available)
+    // 5. Render Leaflet Map (Supports native GeoJSON, GeometryJSON strings, and Lat/Long coordinates)
     let rawObj = null;
+
     if (data.rawJson) {
         try {
-            rawObj = typeof data.rawJson === 'string' ? JSON.parse(data.rawJson) : data.rawJson;
+            const parsed = typeof data.rawJson === 'string' ? JSON.parse(data.rawJson) : data.rawJson;
+            if (parsed && (parsed.type === 'FeatureCollection' || parsed.type === 'Feature')) {
+                rawObj = parsed;
+            }
         } catch (e) {
-            console.warn("Could not parse JSON for map:", e);
+            console.warn("Could not parse rawJson as GeoJSON:", e);
         }
-    } else if (data.hasGeometry && data.rows) {
-        // Construct GeoJSON feature collection on the fly from rows (up to 3000 for map view)
+    }
+
+    // If not a native GeoJSON FeatureCollection, dynamically build GeoJSON Features from rows
+    if (!rawObj && data.rows && data.rows.length > 0) {
         const features = [];
         const rowsForMap = data.rows.length > 3000 ? data.rows.slice(0, 3000) : data.rows;
-        for (let row of rowsForMap) {
-            if (row.Geometry_Type && row.Geometry_Type !== 'None' && row.Coordinates) {
-                try {
-                    let coords = typeof row.Coordinates === 'string' ? JSON.parse(row.Coordinates) : row.Coordinates;
-                    const props = Object.assign({}, row);
-                    delete props.Coordinates;
-                    delete props.Geometry_Type;
-                    delete props.Feature_Id;
 
-                    features.push({
-                        type: "Feature",
-                        geometry: {
-                            type: row.Geometry_Type,
-                            coordinates: coords
-                        },
-                        properties: props
-                    });
-                } catch (e) {
-                    // Skip malformed individual coordinate strings
+        for (let row of rowsForMap) {
+            let geomType = row.Geometry_Type || row.GeometryType || "Point";
+            let coords = null;
+
+            // 1. Check for embedded GeometryJSON (e.g. "{ \"type\": \"Point\", \"coordinates\": [ 84.08, 24.81 ] }")
+            if (row.GeometryJSON) {
+                try {
+                    const gJson = typeof row.GeometryJSON === 'string' ? JSON.parse(row.GeometryJSON) : row.GeometryJSON;
+                    if (gJson && gJson.coordinates) {
+                        geomType = gJson.type || geomType;
+                        coords = gJson.coordinates;
+                    }
+                } catch (e) { }
+            }
+
+            // 2. Check for Coordinates array/string
+            if (!coords && row.Coordinates) {
+                try {
+                    coords = typeof row.Coordinates === 'string' ? JSON.parse(row.Coordinates) : row.Coordinates;
+                } catch (e) { }
+            }
+
+            // 3. Check for Longitude and Latitude property variations (strings or numbers)
+            if (!coords) {
+                const lonVal = row.Longitude !== undefined ? row.Longitude : (row.lon !== undefined ? row.lon : (row.lng !== undefined ? row.lng : row.long));
+                const latVal = row.Latitude !== undefined ? row.Latitude : (row.lat !== undefined ? row.lat : row.y);
+                if (lonVal !== undefined && latVal !== undefined && lonVal !== null && latVal !== null) {
+                    const lonNum = parseFloat(lonVal);
+                    const latNum = parseFloat(latVal);
+                    if (!isNaN(lonNum) && !isNaN(latNum)) {
+                        coords = [lonNum, latNum];
+                    }
                 }
             }
+
+            if (coords && Array.isArray(coords)) {
+                const props = Object.assign({}, row);
+                delete props.GeometryJSON;
+                features.push({
+                    type: "Feature",
+                    geometry: {
+                        type: geomType || "Point",
+                        coordinates: coords
+                    },
+                    properties: props
+                });
+            }
         }
-        rawObj = {
-            type: "FeatureCollection",
-            features: features
-        };
+
+        if (features.length > 0) {
+            rawObj = {
+                type: "FeatureCollection",
+                features: features
+            };
+        }
     }
+
     renderMap(rawObj);
 
     // 6. Render Windowed Dynamic HTML Table

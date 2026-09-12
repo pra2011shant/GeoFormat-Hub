@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "rZErNV10UFA=",
+  "dgSpecHash": "mOQ9r6IxQ8g=",
   "success": true,
   "projectFilePath": "E:\\Work\\GeoFormat Hub\\GeoFormat Hub\\GeoFormat Hub\\GeoFormat Hub.csproj",
   "expectedPackageFiles": [
@@ -15,7 +15,8 @@
     "C:\\Users\\Prashant\\.nuget\\packages\\system.io.packaging\\8.0.1\\system.io.packaging.8.0.1.nupkg.sha512",
     "C:\\Users\\Prashant\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.30\\microsoft.netcore.app.ref.8.0.30.nupkg.sha512",
     "C:\\Users\\Prashant\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.30\\microsoft.windowsdesktop.app.ref.8.0.30.nupkg.sha512",
-    "C:\\Users\\Prashant\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.30\\microsoft.aspnetcore.app.ref.8.0.30.nupkg.sha512"
+    "C:\\Users\\Prashant\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.30\\microsoft.aspnetcore.app.ref.8.0.30.nupkg.sha512",
+    "C:\\Users\\Prashant\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.30\\microsoft.netcore.app.host.win-x64.8.0.30.nupkg.sha512"
   ],
   "logs": []
 }

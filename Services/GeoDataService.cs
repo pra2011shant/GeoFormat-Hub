@@ -269,7 +269,7 @@ namespace GeoFormat_Hub.Services
 
         /// <summary>
         /// Parses a generic array of JSON objects into structured grid rows.
-        /// Automatically detects latitude/longitude properties in standard JSON for GIS mapping.
+        /// Automatically detects string/numeric latitude & longitude properties and embedded GeometryJSON for GIS mapping.
         /// </summary>
         private void ParseGenericJsonArray(JsonElement array, GeoDataset dataset)
         {
@@ -277,6 +277,7 @@ namespace GeoFormat_Hub.Services
             var tempRows = new List<Dictionary<string, object?>>();
             int index = 1;
             bool coordinatesDetected = false;
+            string detectedGeomType = "Point";
 
             foreach (var item in array.EnumerateArray())
             {
@@ -287,6 +288,8 @@ namespace GeoFormat_Hub.Services
                 {
                     double? lat = null;
                     double? lon = null;
+                    string? geomJsonString = null;
+                    string? customGeomType = null;
 
                     foreach (var prop in item.EnumerateObject())
                     {
@@ -294,10 +297,22 @@ namespace GeoFormat_Hub.Services
                         object? val = ExtractJsonValue(prop.Value);
                         row[prop.Name] = val;
 
-                        // Auto-detect standard coordinate property names (lat, latitude, lon, lng, longitude, x, y)
-                        if (val is double or int or long or float)
+                        if (prop.Name.Equals("GeometryJSON", StringComparison.OrdinalIgnoreCase) ||
+                            prop.Name.Equals("geom", StringComparison.OrdinalIgnoreCase) ||
+                            prop.Name.Equals("geometry", StringComparison.OrdinalIgnoreCase) ||
+                            prop.Name.Equals("the_geom", StringComparison.OrdinalIgnoreCase))
                         {
-                            double numVal = Convert.ToDouble(val, CultureInfo.InvariantCulture);
+                            geomJsonString = val?.ToString();
+                        }
+                        else if (prop.Name.Equals("GeometryType", StringComparison.OrdinalIgnoreCase) ||
+                                 prop.Name.Equals("Geometry_Type", StringComparison.OrdinalIgnoreCase))
+                        {
+                            customGeomType = val?.ToString();
+                        }
+
+                        // Robust coordinate parsing: handles both numeric (double) and string ("84.089...") values
+                        if (val != null && double.TryParse(val.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out double numVal))
+                        {
                             if (prop.Name.Equals("lat", StringComparison.OrdinalIgnoreCase) ||
                                 prop.Name.Equals("latitude", StringComparison.OrdinalIgnoreCase) ||
                                 prop.Name.Equals("lat_deg", StringComparison.OrdinalIgnoreCase) ||
@@ -317,12 +332,34 @@ namespace GeoFormat_Hub.Services
                         }
                     }
 
-                    // If latitude and longitude were found, link GIS geometry point automatically
+                    // 1. Direct Lat/Lon fields found
                     if (lat.HasValue && lon.HasValue)
                     {
-                        row["Geometry_Type"] = "Point";
+                        string gType = !string.IsNullOrWhiteSpace(customGeomType) ? customGeomType : "Point";
+                        row["Geometry_Type"] = gType;
                         row["Coordinates"] = $"[{lon.Value.ToString(CultureInfo.InvariantCulture)}, {lat.Value.ToString(CultureInfo.InvariantCulture)}]";
                         coordinatesDetected = true;
+                        detectedGeomType = gType;
+                    }
+                    // 2. Embedded GeometryJSON string found (e.g. "{ \"type\": \"Point\", \"coordinates\": [84.08, 24.81] }")
+                    else if (!string.IsNullOrWhiteSpace(geomJsonString))
+                    {
+                        try
+                        {
+                            using var gDoc = JsonDocument.Parse(geomJsonString);
+                            var gRoot = gDoc.RootElement;
+                            if (gRoot.ValueKind == JsonValueKind.Object &&
+                                gRoot.TryGetProperty("type", out var gType) &&
+                                gRoot.TryGetProperty("coordinates", out var gCoords))
+                            {
+                                string gTypeStr = gType.GetString() ?? "Point";
+                                row["Geometry_Type"] = gTypeStr;
+                                row["Coordinates"] = gCoords.GetRawText();
+                                coordinatesDetected = true;
+                                detectedGeomType = gTypeStr;
+                            }
+                        }
+                        catch { }
                     }
                 }
                 else
@@ -339,7 +376,7 @@ namespace GeoFormat_Hub.Services
             if (coordinatesDetected)
             {
                 dataset.HasGeometry = true;
-                dataset.GeometryTypeSummary = $"Point ({tempRows.Count})";
+                dataset.GeometryTypeSummary = $"{detectedGeomType} ({tempRows.Count})";
                 columns.Add("Geometry_Type");
                 columns.Add("Coordinates");
             }
